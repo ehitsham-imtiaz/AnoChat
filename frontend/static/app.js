@@ -983,6 +983,7 @@
 
   function logTypeClass(type) {
     const value = String(type || "").toLowerCase();
+    if (value.indexOf("attachment") >= 0 || value.indexOf("file") >= 0) return "attachment";
     if (value.indexOf("project") >= 0) return "project";
     if (value.indexOf("chatter") >= 0) return "chatter";
     if (value.indexOf("message") >= 0) return "message";
@@ -997,6 +998,7 @@
     if (value === "chatter" || value === "message") return "MessagesSquare";
     if (value === "user") return "Users";
     if (value === "login") return "LogOut";
+    if (value === "attachment") return "Paperclip";
     return "Activity";
   }
 
