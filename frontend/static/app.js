@@ -1025,7 +1025,10 @@
 
   function filteredUsers() {
     const q = state.filters.userSearch.toLowerCase();
-    return state.users.filter((u) => !q || [u.name, u.email, u.login, roles(u).join(" "), displayRoles(u).join(" ")].join(" ").toLowerCase().indexOf(q) >= 0);
+    return state.users.filter((u) => {
+      if (Number(u.id) === Number(state.user?.id)) return false;
+      return !q || [u.name, u.email, u.login, roles(u).join(" "), displayRoles(u).join(" ")].join(" ").toLowerCase().indexOf(q) >= 0;
+    });
   }
 
   function userRow(user) {
