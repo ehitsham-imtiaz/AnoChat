@@ -55,24 +55,7 @@ Open:
 
 The seed users are created on startup if they do not already exist.
 
-## Important Routes
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `GET/POST/PUT/DELETE /api/users`
-- `GET/POST/PUT/DELETE /api/projects`
-- `GET/POST/PUT/DELETE /api/chatters`
-- `GET/POST /api/chatters/{id}/messages`
-- `PUT/DELETE /api/messages/{id}`
-- `POST /api/attachments/upload`
-- `GET/DELETE /api/attachments/{id}`
-- `GET /api/activity-logs`
-- `GET /api/email-logs`
-- `POST /api/email/inbound`
-- `GET /api/monitoring/health`
-- `GET /api/monitoring/stats`
 
 ## Migration Reports
 
