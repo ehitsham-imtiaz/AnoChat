@@ -44,7 +44,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
     email = str(payload.email).strip().lower()
     login = str(payload.login or email).strip().lower()
     if db.query(User).filter((User.login == login) | (User.email == email)).first():
-        raise HTTPException(status_code=409, detail="User already exists")
+        raise HTTPException(status_code=409, detail=f"User already exists for {email}")
     role_names = [role for role in (payload.roles or ["customer"]) if role in KNOWN_ROLES]
     if not role_names:
         raise HTTPException(status_code=400, detail="Select a valid role")
@@ -64,7 +64,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="User already exists") from None
+        raise HTTPException(status_code=409, detail=f"User already exists for {email}") from None
     db.refresh(user)
     return user
 
