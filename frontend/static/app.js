@@ -420,6 +420,7 @@
   async function login(event) {
     event.preventDefault();
     const payload = Object.fromEntries(new FormData(event.target).entries());
+    payload.login = String(payload.login || "").trim().toLowerCase();
     if (!payload.login || !payload.password) {
       toast("Enter your login and password.", "error");
       render();

@@ -50,22 +50,21 @@ def seed_data(db: Session) -> None:
             db.flush()
         roles[name] = role
 
-    if not db.query(User).filter(User.email == settings.seed_admin_email).first():
-        db.add(User(
-            name="Admin User",
-            login=settings.seed_admin_email,
-            email=settings.seed_admin_email,
-            hashed_password=hash_password(settings.seed_admin_password),
-            roles=[roles["admin"]],
-        ))
-    if not db.query(User).filter(User.email == settings.seed_customer_email).first():
-        db.add(User(
-            name="Customer User",
-            login=settings.seed_customer_email,
-            email=settings.seed_customer_email,
-            hashed_password=hash_password(settings.seed_customer_password),
-            roles=[roles["customer"]],
-        ))
+    def upsert_seed_user(name: str, email: str, password: str, role_name: str) -> None:
+        email_key = str(email).strip().lower()
+        user = db.query(User).filter((User.email == email_key) | (User.login == email_key)).first()
+        if not user:
+            user = User(name=name)
+            db.add(user)
+        user.name = name
+        user.login = email_key
+        user.email = email_key
+        user.active = True
+        user.hashed_password = hash_password(password)
+        user.roles = [roles[role_name]]
+
+    upsert_seed_user("Admin User", settings.seed_admin_email, settings.seed_admin_password, "admin")
+    upsert_seed_user("Customer User", settings.seed_customer_email, settings.seed_customer_password, "customer")
     db.commit()
 
 

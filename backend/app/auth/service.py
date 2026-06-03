@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.jwt import decode_access_token
@@ -13,10 +14,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def authenticate_user(db: Session, login: str, password: str, request: Request | None = None) -> User | None:
-    user = db.query(User).filter((User.login == login) | (User.email == login)).first()
+    login_key = str(login or "").strip().lower()
+    user = db.query(User).filter(
+        (func.lower(User.login) == login_key) | (func.lower(User.email) == login_key)
+    ).first()
     ok = bool(user and user.active and verify_password(password, user.hashed_password))
     db.add(LoginAudit(
-        login=login,
+        login=login_key,
         user_id=user.id if user else None,
         status="success" if ok else "failed",
         ip_address=request.client.host if request and request.client else None,

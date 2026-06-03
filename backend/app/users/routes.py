@@ -41,8 +41,9 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(get_c
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     require_roles(current_user, {"admin"})
-    login = payload.login or payload.email
-    if db.query(User).filter((User.login == login) | (User.email == payload.email)).first():
+    email = str(payload.email).strip().lower()
+    login = str(payload.login or email).strip().lower()
+    if db.query(User).filter((User.login == login) | (User.email == email)).first():
         raise HTTPException(status_code=409, detail="User already exists")
     role_names = [role for role in (payload.roles or ["customer"]) if role in KNOWN_ROLES]
     if not role_names:
@@ -50,7 +51,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
     user = User(
         name=payload.name,
         login=login,
-        email=str(payload.email),
+        email=email,
         phone=payload.phone,
         active=payload.active,
         hashed_password=hash_password(payload.password),
@@ -85,6 +86,10 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
     password = data.pop("password", None)
     if "messenger_status" in data and data["messenger_status"] not in {"online", "away", "busy", "offline"}:
         raise HTTPException(status_code=400, detail="Select a valid presence status")
+    if "email" in data and data["email"] is not None:
+        data["email"] = str(data["email"]).strip().lower()
+    if "login" in data and data["login"] is not None:
+        data["login"] = str(data["login"]).strip().lower()
     was_active = user.active
     for key, value in data.items():
         setattr(user, key, value)
