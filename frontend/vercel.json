@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/anochat-backend/:path*",
+      "destination": "https://director-disabilities-worlds-sunglasses.trycloudflare.com/api/anochat-backend/:path*"
+    }
+  ]
+}
