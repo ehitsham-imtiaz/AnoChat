@@ -425,14 +425,38 @@
       render();
       return;
     }
-    await run(async () => {
+    state.loading = true;
+    state.error = "";
+    render();
+    try {
       const result = await apiClient.post("/api/auth/login", payload);
       apiClient.setToken(result.access_token);
       state.user = result.user;
-      await loadAll();
+      state.tab = "dashboard";
+      localStorage.setItem("anochat_tab", "dashboard");
       broadcastPresenceChange(state.user);
       startPresenceSync();
-    }, "Signed in.");
+      state.loading = false;
+      toast("Signed in.", "success");
+      render();
+      loadWorkspaceAfterLogin();
+    } catch (err) {
+      const message = err.message || String(err);
+      state.error = message;
+      state.loading = false;
+      toast(message, "error");
+      render();
+    }
+  }
+
+  async function loadWorkspaceAfterLogin() {
+    try {
+      await Promise.all([loadNotifications(), loadTab(state.tab)]);
+    } catch (err) {
+      toast(err.message || "Workspace data is still loading. Please refresh if it does not appear.", "error");
+    } finally {
+      render();
+    }
   }
 
   async function logout() {
@@ -541,8 +565,7 @@
       state.tab = "dashboard";
       localStorage.setItem("anochat_tab", state.tab);
     }
-    await Promise.all([loadUsers(), loadProjects(), loadChatters(), loadNotifications()]);
-    await loadTab(state.tab);
+    await Promise.all([loadNotifications(), loadTab(state.tab)]);
   }
 
   async function bootstrap() {
@@ -568,7 +591,7 @@
   }
 
   async function loadTab(tab) {
-    if (tab === "dashboard") await Promise.all([loadUsers(), loadProjects(), loadChatters(), loadMonitoringSoft()]);
+    if (tab === "dashboard") await Promise.all([loadUsers(), loadProjects(), loadChatters({ listOnly: true }), loadMonitoringSoft()]);
     if (tab === "projects") await Promise.all([loadUsers(), loadProjects()]);
     if (tab === "chatters") await Promise.all([loadUsers(), loadProjects(), loadChatters(), loadFiles()]);
     if (tab === "monitoring") await Promise.all([loadMonitoring(), loadChatters({ listOnly: true })]);
