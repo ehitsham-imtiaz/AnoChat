@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.activity_logs.routes import router as activity_logs_router
@@ -69,14 +69,20 @@ def seed_data(db: Session) -> None:
 
 
 def ensure_runtime_schema() -> None:
+    inspector = inspect(engine)
+    if not inspector.has_table("messages"):
+        return
+    columns = {column["name"] for column in inspector.get_columns("messages")}
+    dialect = engine.dialect.name
+    deleted_at_type = "TIMESTAMP WITH TIME ZONE" if dialect == "postgresql" else "DATETIME"
+    deleted_default = "FALSE" if dialect == "postgresql" else "0"
+    additions = {
+        "original_body": "ALTER TABLE messages ADD COLUMN original_body TEXT",
+        "is_deleted": f"ALTER TABLE messages ADD COLUMN is_deleted BOOLEAN DEFAULT {deleted_default}",
+        "deleted_by_id": "ALTER TABLE messages ADD COLUMN deleted_by_id INTEGER",
+        "deleted_at": f"ALTER TABLE messages ADD COLUMN deleted_at {deleted_at_type}",
+    }
     with engine.begin() as connection:
-        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(messages)")).fetchall()}
-        additions = {
-            "original_body": "ALTER TABLE messages ADD COLUMN original_body TEXT",
-            "is_deleted": "ALTER TABLE messages ADD COLUMN is_deleted BOOLEAN DEFAULT 0",
-            "deleted_by_id": "ALTER TABLE messages ADD COLUMN deleted_by_id INTEGER",
-            "deleted_at": "ALTER TABLE messages ADD COLUMN deleted_at DATETIME",
-        }
         for column, statement in additions.items():
             if column not in columns:
                 connection.execute(text(statement))
