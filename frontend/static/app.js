@@ -233,8 +233,8 @@
         h("h2", {}, "Welcome back"),
         h("p", { class: "muted" }, "Sign in to your workspace account"),
         state.toasts.filter((toast) => toast.type === "error").slice(-1).map((toast) => h("div", { class: "inline-alert" }, toast.message))[0] || null,
-        loginField("Login / Email", "Mail", h("input", { name: "login", value: "admin@example.com", autocomplete: "username", oninput: clearLoginError })),
-        loginField("Password", "Lock", h("input", { id: "login-password", name: "password", type: "password", value: "Admin123!", autocomplete: "current-password", oninput: clearLoginError }), h("button", { type: "button", class: "password-eye", onclick: togglePassword }, [icon("Eye", 18)])),
+        loginField("Login / Email", "Mail", h("input", { name: "login", placeholder: "Enter your email", autocomplete: "username", oninput: clearLoginError })),
+        loginField("Password", "Lock", h("input", { id: "login-password", name: "password", type: "password", placeholder: "Enter your password", autocomplete: "current-password", oninput: clearLoginError }), h("button", { type: "button", class: "password-eye", onclick: togglePassword }, [icon("Eye", 18)])),
         h("button", { class: "btn btn-primary btn-block login-submit" }, [icon("LogOut", 18), "Log in to portal"]),
       ]),
     ]);
