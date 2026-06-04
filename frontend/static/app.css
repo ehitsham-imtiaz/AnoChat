@@ -2577,6 +2577,13 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   border-radius: 24px;
   padding: 22px;
 }
+.modal:has(.profile-modal-body) {
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: 22px;
+  border-radius: 26px;
+}
 .image-preview-modal {
   width: min(920px, calc(100vw - 28px));
   padding: 16px;
@@ -2657,6 +2664,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .profile-modal-body {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 .profile-modal-hero {
   display: grid;
@@ -2722,11 +2730,15 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .profile-modal-actions {
   justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  margin-top: 2px;
+  border-top: 1px solid var(--soft-line);
 }
 .account-settings-form {
   display: grid;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--soft-line);
   border-radius: 20px;
   background: color-mix(in srgb, var(--surface-2) 88%, transparent);
@@ -2759,6 +2771,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .account-save-btn {
   justify-self: end;
+  min-width: 178px;
 }
 .presence-badge {
   display: inline-flex;
@@ -4256,9 +4269,22 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   .account-settings-grid {
     grid-template-columns: 1fr;
   }
+  .profile-modal-hero {
+    padding: 14px;
+    border-radius: 18px;
+  }
+  .profile-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .profile-modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
   .account-save-btn {
     width: 100%;
     justify-self: stretch;
+    min-width: 0;
   }
   .modal:has(.custom-select.open) {
     overflow: visible;
