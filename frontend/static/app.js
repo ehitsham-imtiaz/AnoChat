@@ -843,12 +843,22 @@
   async function loadUsers() { state.users = await apiClient.get("/api/users"); }
   async function loadNotifications() { state.notifications = await apiClient.get("/api/notifications"); }
   async function loadPushSettings() {
-    const [config, preferences] = await Promise.all([
-      apiClient.get("/api/notifications/push-config"),
-      apiClient.get("/api/notifications/preferences"),
-    ]);
-    state.pushConfig = config;
-    state.notificationPreferences = preferences;
+    try {
+      const [config, preferences] = await Promise.all([
+        apiClient.get("/api/notifications/push-config"),
+        apiClient.get("/api/notifications/preferences"),
+      ]);
+      state.pushConfig = config;
+      state.notificationPreferences = preferences;
+    } catch (err) {
+      state.pushConfig = { enabled: false, public_key: null };
+      state.notificationPreferences = state.notificationPreferences || {
+        browser_push_enabled: false,
+        chatter_messages_enabled: true,
+        workspace_updates_enabled: true,
+        mentions_enabled: true,
+      };
+    }
   }
   async function loadProjects() { state.projects = await apiClient.get("/api/projects"); }
   async function loadFiles() { state.files = await apiClient.get("/api/attachments"); }
