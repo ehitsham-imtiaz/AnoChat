@@ -86,8 +86,31 @@ def ensure_runtime_schema() -> None:
         "is_deleted": f"ALTER TABLE attachments ADD COLUMN is_deleted BOOLEAN DEFAULT {deleted_default}",
         "deleted_by_id": "ALTER TABLE attachments ADD COLUMN deleted_by_id INTEGER",
         "deleted_at": f"ALTER TABLE attachments ADD COLUMN deleted_at {deleted_at_type}",
+        "duration_seconds": "ALTER TABLE attachments ADD COLUMN duration_seconds FLOAT",
+    }
+    user_columns = {column["name"] for column in inspector.get_columns("users")} if inspector.has_table("users") else set()
+    user_additions = {
+        "active_session_version": "ALTER TABLE users ADD COLUMN active_session_version INTEGER DEFAULT 0 NOT NULL",
+        "read_only": f"ALTER TABLE users ADD COLUMN read_only BOOLEAN DEFAULT {deleted_default} NOT NULL",
+    }
+    project_member_columns = {column["name"] for column in inspector.get_columns("project_members")} if inspector.has_table("project_members") else set()
+    project_member_additions = {
+        "is_read_only": f"ALTER TABLE project_members ADD COLUMN is_read_only BOOLEAN DEFAULT {deleted_default} NOT NULL",
+    }
+    chatter_member_columns = {column["name"] for column in inspector.get_columns("chatter_members")} if inspector.has_table("chatter_members") else set()
+    chatter_member_additions = {
+        "is_read_only": f"ALTER TABLE chatter_members ADD COLUMN is_read_only BOOLEAN DEFAULT {deleted_default} NOT NULL",
     }
     with engine.begin() as connection:
+        for column, statement in user_additions.items():
+            if column not in user_columns:
+                connection.execute(text(statement))
+        for column, statement in project_member_additions.items():
+            if column not in project_member_columns:
+                connection.execute(text(statement))
+        for column, statement in chatter_member_additions.items():
+            if column not in chatter_member_columns:
+                connection.execute(text(statement))
         for column, statement in message_additions.items():
             if column not in message_columns:
                 connection.execute(text(statement))

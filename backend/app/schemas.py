@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     email: EmailStr
     phone: str | None = None
     active: bool = True
+    read_only: bool = False
     roles: list[str] = Field(default_factory=list)
 
 
@@ -31,6 +32,7 @@ class UserUpdate(BaseModel):
     phone: str | None = None
     password: str | None = Field(default=None, min_length=8)
     active: bool | None = None
+    read_only: bool | None = None
     messenger_status: str | None = None
     roles: list[str] | None = None
 
@@ -42,6 +44,7 @@ class UserOut(BaseModel):
     login: str
     email: EmailStr
     active: bool
+    read_only: bool = False
     phone: str | None = None
     messenger_status: str
     roles: list[RoleOut] = []
@@ -72,6 +75,7 @@ class ProjectBase(BaseModel):
     manager_id: int | None = None
     customer_id: int | None = None
     member_ids: list[int] = Field(default_factory=list)
+    read_only_member_ids: list[int] = Field(default_factory=list)
 
 
 class ProjectCreate(ProjectBase):
@@ -91,6 +95,7 @@ class ProjectUpdate(BaseModel):
     manager_id: int | None = None
     customer_id: int | None = None
     member_ids: list[int] | None = None
+    read_only_member_ids: list[int] | None = None
 
 
 class ProjectOut(BaseModel):
@@ -108,6 +113,7 @@ class ProjectOut(BaseModel):
     manager_id: int | None = None
     customer_id: int | None = None
     members: list[UserOut] = []
+    read_only_member_ids: list[int] = []
     created_at: datetime
 
 
@@ -123,6 +129,7 @@ class ChatterBase(BaseModel):
     allow_calls: bool = True
     allow_video_calls: bool = True
     member_ids: list[int] = Field(default_factory=list)
+    read_only_member_ids: list[int] = Field(default_factory=list)
 
 
 class ChatterCreate(ChatterBase):
@@ -142,6 +149,7 @@ class ChatterUpdate(BaseModel):
     allow_calls: bool | None = None
     allow_video_calls: bool | None = None
     member_ids: list[int] | None = None
+    read_only_member_ids: list[int] | None = None
 
 
 class ChatterOut(BaseModel):
@@ -156,10 +164,14 @@ class ChatterOut(BaseModel):
     post_policy: str
     active: bool
     allow_attachments: bool
+    allow_voice_notes: bool
+    allow_calls: bool
+    allow_video_calls: bool
     last_message_preview: str | None = None
     last_activity: datetime | None = None
     unread_count: int = 0
     members: list[UserOut] = []
+    read_only_member_ids: list[int] = []
     created_at: datetime
 
 
@@ -168,6 +180,15 @@ class MessageCreate(BaseModel):
     message_type: str = "text"
     attachment_ids: list[int] = Field(default_factory=list)
     reply_to_id: int | None = None
+
+
+class TypingUserOut(BaseModel):
+    id: int
+    name: str
+
+
+class TypingStateUpdate(BaseModel):
+    is_typing: bool = True
 
 
 class MessageUpdate(BaseModel):
@@ -182,6 +203,7 @@ class AttachmentOut(BaseModel):
     filename: str
     content_type: str
     size_bytes: int
+    duration_seconds: float | None = None
     project_id: int | None = None
     chatter_id: int | None = None
     uploaded_by_id: int | None = None
@@ -211,6 +233,10 @@ class MessageOut(BaseModel):
     reply_to_sender_name: str | None = None
     reply_to_body: str | None = None
     created_at: datetime
+    updated_at: datetime | None = None
+    can_edit: bool = False
+    can_edit_until: datetime | None = None
+    is_edited: bool = False
 
 
 class GenericLogOut(BaseModel):
@@ -226,6 +252,34 @@ class NotificationOut(BaseModel):
     body: str | None = None
     is_read: bool
     created_at: datetime
+
+
+class PushConfigOut(BaseModel):
+    enabled: bool
+    public_key: str | None = None
+
+
+class NotificationPreferenceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    browser_push_enabled: bool
+    push_chatter_messages: bool
+    push_workspace_updates: bool
+
+
+class NotificationPreferenceUpdate(BaseModel):
+    browser_push_enabled: bool | None = None
+    push_chatter_messages: bool | None = None
+    push_workspace_updates: bool | None = None
+
+
+class PushSubscriptionKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionIn(BaseModel):
+    endpoint: str
+    keys: PushSubscriptionKeys
 
 
 class InboundEmail(BaseModel):

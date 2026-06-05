@@ -17,15 +17,17 @@ from app.models import (
     LoginAudit,
     Message,
     Notification,
+    NotificationPreference,
     Project,
     SignupRequest,
     TypingState,
     User,
+    WebPushSubscription,
     message_attachments,
     message_seen,
 )
 from app.notifications.service import create_notification
-from app.roles.permissions import KNOWN_ROLES, is_admin, require_roles
+from app.roles.permissions import KNOWN_ROLES, is_admin, require_roles, require_write_access
 from app.schemas import UserCreate, UserOut, UserUpdate
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -41,6 +43,7 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(get_c
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     require_roles(current_user, {"admin"})
+    require_write_access(current_user)
     email = str(payload.email).strip().lower()
     login = str(payload.login or email).strip().lower()
     if db.query(User).filter((User.login == login) | (User.email == email)).first():
@@ -54,6 +57,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
         email=email,
         phone=payload.phone,
         active=payload.active,
+        read_only=payload.read_only,
         hashed_password=hash_password(payload.password),
         roles=ensure_roles(db, role_names),
     )
@@ -84,6 +88,11 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
     data = payload.model_dump(exclude_unset=True)
     roles = data.pop("roles", None)
     password = data.pop("password", None)
+    if roles is not None or "active" in data or "read_only" in data:
+        require_roles(current_user, {"admin"})
+        require_write_access(current_user)
+    elif current_user.id != user_id:
+        require_write_access(current_user)
     if "messenger_status" in data and data["messenger_status"] not in {"online", "away", "busy", "offline"}:
         raise HTTPException(status_code=400, detail="Select a valid presence status")
     if "email" in data and data["email"] is not None:
@@ -112,6 +121,7 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     require_roles(current_user, {"admin"})
+    require_write_access(current_user)
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="You cannot delete your own account")
     user = get_or_404(db, User, user_id)
@@ -136,6 +146,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
     db.query(SignupRequest).filter(SignupRequest.processed_by_id == user.id).update({"processed_by_id": None}, synchronize_session=False)
     db.query(AttendanceLog).filter(AttendanceLog.user_id == user.id).delete(synchronize_session=False)
     db.query(Notification).filter(Notification.user_id == user.id).delete(synchronize_session=False)
+    db.query(NotificationPreference).filter(NotificationPreference.user_id == user.id).delete(synchronize_session=False)
+    db.query(WebPushSubscription).filter(WebPushSubscription.user_id == user.id).delete(synchronize_session=False)
     db.query(TypingState).filter(TypingState.user_id == user.id).delete(synchronize_session=False)
     db.query(CallSignal).filter(CallSignal.sender_id == user.id).delete(synchronize_session=False)
     db.delete(user)
@@ -147,6 +159,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
 @router.put("/{user_id}/role", response_model=UserOut)
 def set_role(user_id: int, roles: list[str], db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     require_roles(current_user, {"admin"})
+    require_write_access(current_user)
     user = get_or_404(db, User, user_id)
     user.roles = ensure_roles(db, roles)
     log_activity(db, "role_updated", f"{current_user.name} updated roles for {user.name}.", current_user.id)

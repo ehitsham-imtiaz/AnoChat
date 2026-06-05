@@ -11,8 +11,8 @@ from app.auth.service import get_current_user
 from app.common import get_or_404
 from app.config import get_settings
 from app.database import get_db
-from app.models import Attachment, User
-from app.roles.permissions import is_admin
+from app.models import Attachment, Chatter, Project, User
+from app.roles.permissions import assert_chatter_access, assert_project_access, is_admin, require_chatter_write_access, require_project_write_access, require_write_access
 from app.schemas import AttachmentOut
 
 router = APIRouter(prefix="/api/attachments", tags=["attachments"])
@@ -44,6 +44,7 @@ EXTENSION_CONTENT_TYPES = {
 
 
 def allowed_content_type(filename: str | None, content_type: str) -> str | None:
+    content_type = (content_type or "application/octet-stream").split(";", 1)[0].strip().lower()
     suffix = Path(filename or "").suffix.lower()
     extension_types = EXTENSION_CONTENT_TYPES.get(suffix)
     if extension_types and content_type in extension_types:
@@ -68,9 +69,19 @@ async def upload_attachment(
     file: UploadFile = File(...),
     project_id: int | None = Form(default=None),
     chatter_id: int | None = Form(default=None),
+    duration_seconds: float | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    require_write_access(current_user)
+    if chatter_id:
+        chatter = get_or_404(db, Chatter, chatter_id)
+        assert_chatter_access(current_user, chatter)
+        require_chatter_write_access(db, current_user, chatter)
+    if project_id:
+        project = get_or_404(db, Project, project_id)
+        assert_project_access(current_user, project)
+        require_project_write_access(db, current_user, project)
     content = await file.read()
     if len(content) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="File too large")
@@ -88,6 +99,7 @@ async def upload_attachment(
         stored_filename=stored,
         content_type=content_type,
         size_bytes=len(content),
+        duration_seconds=duration_seconds if content_type.startswith("audio/") else None,
         storage_path=str(path),
         uploaded_by_id=current_user.id,
         project_id=project_id,
@@ -114,6 +126,13 @@ def download_attachment(attachment_id: int, db: Session = Depends(get_db), curre
 @router.delete("/{attachment_id}")
 def delete_attachment(attachment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     attachment = get_or_404(db, Attachment, attachment_id)
+    require_write_access(current_user)
+    if attachment.chatter_id:
+        chatter = get_or_404(db, Chatter, attachment.chatter_id)
+        require_chatter_write_access(db, current_user, chatter)
+    if attachment.project_id:
+        project = get_or_404(db, Project, attachment.project_id)
+        require_project_write_access(db, current_user, project)
     if attachment.uploaded_by_id != current_user.id:
         if not is_admin(current_user):
             raise HTTPException(status_code=403, detail="Only uploader or admin can delete attachments")

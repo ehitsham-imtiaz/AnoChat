@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Chatter, Project, User
+from app.models import Chatter, Project, User, chatter_members, project_members
 
 ADMIN_ROLES = {"admin"}
 STAFF_ROLES = {"admin", "manager", "developer", "staff"}
@@ -19,6 +19,51 @@ def is_admin(user: User) -> bool:
 def require_roles(user: User, allowed: set[str]) -> None:
     if not role_names(user) & allowed:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+
+def require_write_access(user: User) -> None:
+    if user.read_only:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Read-only users cannot make changes")
+
+
+def project_read_only(db: Session, user: User, project: Project) -> bool:
+    if user.read_only:
+        return True
+    if not project or not project.id:
+        return False
+    return bool(db.execute(
+        project_members.select()
+        .where(
+            project_members.c.project_id == project.id,
+            project_members.c.user_id == user.id,
+            project_members.c.is_read_only.is_(True),
+        )
+    ).first())
+
+
+def chatter_read_only(db: Session, user: User, chatter: Chatter) -> bool:
+    if user.read_only:
+        return True
+    if chatter and chatter.id and db.execute(
+        chatter_members.select()
+        .where(
+            chatter_members.c.chatter_id == chatter.id,
+            chatter_members.c.user_id == user.id,
+            chatter_members.c.is_read_only.is_(True),
+        )
+    ).first():
+        return True
+    return bool(chatter and chatter.project and project_read_only(db, user, chatter.project))
+
+
+def require_project_write_access(db: Session, user: User, project: Project) -> None:
+    if project_read_only(db, user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Read-only project access cannot make changes")
+
+
+def require_chatter_write_access(db: Session, user: User, chatter: Chatter) -> None:
+    if chatter_read_only(db, user, chatter):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Read-only chatter access cannot make changes")
 
 
 def can_access_project(user: User, project: Project) -> bool:

@@ -38,10 +38,11 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     user = authenticate_user(db, payload.login, payload.password, request)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid login or password")
+    user.active_session_version = (user.active_session_version or 0) + 1
     user.messenger_status = "online"
     db.commit()
     db.refresh(user)
-    return TokenOut(access_token=create_access_token(str(user.id)), user=user)
+    return TokenOut(access_token=create_access_token(str(user.id), user.active_session_version), user=user)
 
 
 @router.post("/logout")

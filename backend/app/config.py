@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     seed_admin_password: str = "Admin123!"
     seed_customer_email: str = "customer@example.com"
     seed_customer_password: str = "Customer123!"
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_claims_email: str = "admin@example.com"
+    message_edit_window_minutes: int = 10
 
     class Config:
         env_file = ".env"

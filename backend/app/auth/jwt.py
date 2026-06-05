@@ -9,9 +9,9 @@ settings = get_settings()
 ALGORITHM = "HS256"
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, session_version: int) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    return jwt.encode({"sub": subject, "exp": expires_at}, settings.secret_key, algorithm=ALGORITHM)
+    return jwt.encode({"sub": subject, "sv": session_version, "exp": expires_at}, settings.secret_key, algorithm=ALGORITHM)
 
 
 def decode_access_token(token: str) -> dict:

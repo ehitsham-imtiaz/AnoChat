@@ -34,6 +34,10 @@
       if (response.status === 404 && path.indexOf("/api/auth/login") === 0) {
         throw new Error(`Login API not found at ${API_BASE || location.origin}${path}. Check VERCEL_API_BASE; include the gateway prefix if your backend uses one.`);
       }
+      if (response.status === 401 && path.indexOf("/api/auth/login") !== 0) {
+        localStorage.removeItem(TOKEN_KEY);
+        window.dispatchEvent(new CustomEvent("anochat_session_expired", { detail }));
+      }
       throw new Error(Array.isArray(detail) ? detail.map((d) => d.msg).join(", ") : (detail || `Request failed with ${response.status}`));
     }
     const type = response.headers.get("content-type") || "";

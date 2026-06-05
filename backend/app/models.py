@@ -18,6 +18,7 @@ project_members = Table(
     Base.metadata,
     Column("project_id", ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("is_read_only", Boolean, default=False, nullable=False),
 )
 
 chatter_members = Table(
@@ -32,6 +33,7 @@ chatter_members = Table(
     Column("unread_count", Integer, default=0, nullable=False),
     Column("last_seen_at", DateTime(timezone=True)),
     Column("last_seen_message_id", Integer, default=0, nullable=False),
+    Column("is_read_only", Boolean, default=False, nullable=False),
 )
 
 message_attachments = Table(
@@ -71,9 +73,11 @@ class User(TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    read_only: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     phone: Mapped[str | None] = mapped_column(String(64))
     messenger_status: Mapped[str] = mapped_column(String(32), default="offline")
     messenger_last_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    active_session_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     bio: Mapped[str | None] = mapped_column(Text)
     city: Mapped[str | None] = mapped_column(String(128))
     country: Mapped[str | None] = mapped_column(String(128))
@@ -163,6 +167,7 @@ class Attachment(TimestampMixin, Base):
     stored_filename: Mapped[str] = mapped_column(String(255), unique=True)
     content_type: Mapped[str] = mapped_column(String(255))
     size_bytes: Mapped[int] = mapped_column(Integer)
+    duration_seconds: Mapped[float | None] = mapped_column(Float)
     storage_path: Mapped[str] = mapped_column(String(512))
     uploaded_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"), index=True)
@@ -251,6 +256,29 @@ class Notification(TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(255))
     body: Mapped[str | None] = mapped_column(Text)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class NotificationPreference(TimestampMixin, Base):
+    __tablename__ = "notification_preferences"
+    __table_args__ = (UniqueConstraint("user_id", name="uq_notification_preferences_user"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    browser_push_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    push_chatter_messages: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    push_workspace_updates: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class WebPushSubscription(TimestampMixin, Base):
+    __tablename__ = "web_push_subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    endpoint: Mapped[str] = mapped_column(Text, unique=True)
+    p256dh: Mapped[str] = mapped_column(Text)
+    auth: Mapped[str] = mapped_column(Text)
+    user_agent: Mapped[str | None] = mapped_column(String(255))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class TypingState(Base):
