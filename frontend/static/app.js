@@ -1456,16 +1456,29 @@
     if (!file) return;
     if (!state.audioPreviews[file.id]) {
       await loadAudioPreview(file);
-      window.setTimeout(() => toggleVoicePlayback(file), 0);
-      return;
     }
-    const audio = document.querySelector(`audio[data-audio-key="attachment-${file.id}"]`);
+    const audio = await findVoiceAudioElement(file);
     if (!audio) return;
     document.querySelectorAll("audio[data-audio-key]").forEach((item) => {
       if (item !== audio) item.pause();
     });
     if (audio.paused) audio.play().catch(() => toast("Could not play voice note.", "error"));
     else audio.pause();
+  }
+
+  function nextFrame() {
+    return new Promise((resolve) => window.requestAnimationFrame(resolve));
+  }
+
+  async function findVoiceAudioElement(file) {
+    const key = `attachment-${file.id}`;
+    let audio = document.querySelector(`audio[data-audio-key="${key}"]`);
+    if (audio) return audio;
+    await nextFrame();
+    audio = document.querySelector(`audio[data-audio-key="${key}"]`);
+    if (audio) return audio;
+    await nextFrame();
+    return document.querySelector(`audio[data-audio-key="${key}"]`);
   }
 
   function voiceButton(active) {

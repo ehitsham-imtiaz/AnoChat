@@ -5235,15 +5235,18 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .chat-page .bubble.voice-bubble .bubble-meta {
   position: absolute;
-  top: 50%;
+  top: 8px;
   right: 10px;
-  transform: translateY(-50%);
+  transform: none;
   z-index: 3;
 }
 .chat-page .bubble.voice-bubble .message-menu-trigger {
   color: #94a3b8;
   width: 22px;
-  height: 36px;
+  height: 28px;
+}
+.chat-page .bubble.voice-bubble .message-options-menu {
+  top: 28px;
 }
 .chat-page .bubble.attachment-bubble:not(.voice-bubble) {
   width: fit-content;
@@ -5314,7 +5317,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   grid-template-columns: 46px minmax(150px, 1fr) auto 24px;
   gap: 12px;
   border-radius: 18px;
-  padding: 14px 40px 14px 18px;
+  padding: 14px 42px 14px 18px;
   background: #ffffff;
   box-shadow: 0 14px 32px rgba(15,23,42,.08);
 }
