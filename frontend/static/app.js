@@ -739,7 +739,7 @@
         apiClient.get("/api/chatters"),
         apiClient.get(`/api/chatters/${chatterId}/messages`),
         apiClient.get("/api/notifications"),
-        apiClient.get(`/api/chatters/${chatterId}/typing`),
+        loadTypingUsers(chatterId),
       ]);
       if (state.activeChatter !== chatterId || state.tab !== "chatters") return;
       const nextSignature = messageSignature(messages);
@@ -842,6 +842,14 @@
 
   async function loadUsers() { state.users = await apiClient.get("/api/users"); }
   async function loadNotifications() { state.notifications = await apiClient.get("/api/notifications"); }
+  async function loadTypingUsers(chatterId) {
+    if (!chatterId) return [];
+    try {
+      return await apiClient.get(`/api/chatters/${chatterId}/typing`);
+    } catch (err) {
+      return [];
+    }
+  }
   async function loadPushSettings() {
     try {
       const [config, preferences] = await Promise.all([
@@ -868,7 +876,7 @@
     if (!state.activeChatter && state.chatters.length) state.activeChatter = state.chatters[0].id;
     if (state.activeChatter && !state.chatters.some((item) => item.id === state.activeChatter)) state.activeChatter = state.chatters[0]?.id || null;
     state.messages = state.activeChatter ? await apiClient.get(`/api/chatters/${state.activeChatter}/messages`) : [];
-    state.typingUsers = state.activeChatter ? await apiClient.get(`/api/chatters/${state.activeChatter}/typing`) : [];
+    state.typingUsers = state.activeChatter ? await loadTypingUsers(state.activeChatter) : [];
     markChatterReadLocally(state.activeChatter);
     state.lastMessageSignature = messageSignature(state.messages);
   }
