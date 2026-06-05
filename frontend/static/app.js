@@ -37,6 +37,7 @@
     operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
     activeChatter: null,
     chatterInfoOpen: true,
+    chatInfoExpanded: { members: false, images: false, documents: false },
     scrollMessagesBottom: false,
     sendingMessage: false,
     composerBody: "",
@@ -605,6 +606,7 @@
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
         activityLogs: [], emailLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
+        chatInfoExpanded: { members: false, images: false, documents: false },
         lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0,
         operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
       });
@@ -1105,6 +1107,12 @@
     const files = sharedChatterFiles(chatter);
     const images = files.filter((file) => String(file.content_type || "").startsWith("image/"));
     const documents = files.filter((file) => !String(file.content_type || "").startsWith("image/"));
+    const memberLimit = 4;
+    const imageLimit = 4;
+    const documentLimit = 4;
+    const visibleMembers = state.chatInfoExpanded.members ? members : members.slice(0, memberLimit);
+    const visibleImages = state.chatInfoExpanded.images ? images : images.slice(0, imageLimit);
+    const visibleDocuments = state.chatInfoExpanded.documents ? documents : documents.slice(0, documentLimit);
     return h("aside", { class: "conversation-details-card chat-info-panel" }, [
       h("button", { type: "button", class: "chat-info-close", title: "Hide details", onclick: () => { state.chatterInfoOpen = false; render(); } }, [icon("X", 16)]),
       h("div", { class: "conversation-details-head" }, [
@@ -1121,21 +1129,38 @@
         h("div", {}, [icon("Paperclip", 14), h("span", {}, `${files.length} shared file${files.length === 1 ? "" : "s"}`)]),
       ]),
       canManage() ? chatterInfoActions(chatter) : null,
-      h("div", { class: "chat-info-section-title" }, [icon("Users", 14), h("span", {}, "Members")]),
-      members.length ? h("div", { class: "conversation-details-members" }, members.slice(0, 6).map((member) => h("div", { class: "conversation-detail-member" }, [
+      chatInfoSectionTitle("Users", "Members", members.length, "members", memberLimit),
+      members.length ? h("div", { class: "conversation-details-members" }, visibleMembers.map((member) => h("div", { class: "conversation-detail-member" }, [
         h("span", { class: "member-mini-avatar" }, initials(member.name || member.email)),
         h("span", {}, [h("strong", {}, member.name || member.email), h("small", {}, displayRoles(member).join(", ") || "Member")]),
       ]))) : h("div", { class: "conversation-details-empty" }, "No members assigned."),
-      h("div", { class: "chat-info-section-title" }, [icon("Image", 14), h("span", {}, "Shared photos/screenshots")]),
-      images.length ? h("div", { class: "chat-info-media-grid" }, images.slice(0, 9).map((file) => h("button", { type: "button", onclick: () => openImagePreview(file) }, [
+      chatInfoSectionTitle("Image", "Shared photos/screenshots", images.length, "images", imageLimit),
+      images.length ? h("div", { class: "chat-info-media-grid" }, visibleImages.map((file) => h("button", { type: "button", onclick: () => openImagePreview(file) }, [
         imagePreview(file, "chat-info-image"),
         h("span", {}, file.filename || "Image"),
       ]))) : h("div", { class: "conversation-details-empty" }, "No shared images."),
-      h("div", { class: "chat-info-section-title" }, [icon("Paperclip", 14), h("span", {}, "Shared documents/files")]),
-      documents.length ? h("div", { class: "conversation-details-files" }, documents.slice(0, 5).map((file) => h("button", { type: "button", onclick: () => downloadAttachment(file) }, [
-        icon("Paperclip", 14),
-        h("span", {}, file.filename || "Attachment"),
+      chatInfoSectionTitle("Paperclip", "Shared documents/files", documents.length, "documents", documentLimit),
+      documents.length ? h("div", { class: "conversation-details-files" }, visibleDocuments.map((file) => h("button", { type: "button", onclick: () => downloadAttachment(file) }, [
+        fileTypeBadge(file),
+        h("span", {}, [h("strong", {}, file.filename || "Attachment"), h("small", {}, prettyBytes(file.size_bytes || 0))]),
       ]))) : h("div", { class: "conversation-details-empty" }, "No shared files yet."),
+    ]);
+  }
+
+  function chatInfoSectionTitle(iconName, label, count, key, limit) {
+    const expanded = !!state.chatInfoExpanded[key];
+    const canToggle = count > limit;
+    return h("div", { class: "chat-info-section-title" }, [
+      h("span", { class: "chat-info-title-main" }, [icon(iconName, 14), h("span", {}, label)]),
+      h("span", { class: "chat-info-title-count" }, String(count)),
+      canToggle ? h("button", {
+        type: "button",
+        class: "chat-info-see-all",
+        onclick: () => {
+          state.chatInfoExpanded = { ...state.chatInfoExpanded, [key]: !expanded };
+          render();
+        },
+      }, expanded ? "Show less" : "See all") : null,
     ]);
   }
 
@@ -2412,6 +2437,7 @@
     state.replyTo = null;
     state.editingMessage = null;
     state.editingBody = "";
+    state.chatInfoExpanded = { members: false, images: false, documents: false };
     state.openMessageMenu = null;
     state.typingUsers = [];
     state.lastTypingPingAt = 0;
@@ -3126,6 +3152,7 @@
     Object.assign(state, {
       user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
       activityLogs: [], emailLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
+      chatInfoExpanded: { members: false, images: false, documents: false },
       lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0, bootstrapping: false, loading: false,
       operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
     });
