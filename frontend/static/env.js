@@ -1,3 +1,3 @@
 (function () {
-  window.API_BASE = "http://127.0.0.1:8000";
+  window.API_BASE = "https://ubuntu-pc-system-product-name.taildcdc0d.ts.net/api/anochat-backend";
 })();
