@@ -104,6 +104,7 @@
       MessagesSquare: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v10l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
       Moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
       Paperclip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.83l8.49-8.48"/>',
+      Pause: '<rect width="4" height="16" x="6" y="4" rx="1"/><rect width="4" height="16" x="14" y="4" rx="1"/>',
       Play: '<polygon points="6 3 20 12 6 21 6 3"/>',
       Plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
       RadioTower: '<path d="M4.9 16.1a10 10 0 0 1 0-8.2"/><path d="M7.8 13.2a5 5 0 0 1 0-4.4"/><circle cx="12" cy="11" r="2"/><path d="m12 13 4 8"/><path d="m12 13-4 8"/><path d="M16.2 13.2a5 5 0 0 0 0-4.4"/><path d="M19.1 16.1a10 10 0 0 0 0-8.2"/>',
@@ -1431,8 +1432,15 @@
   function audioAttachment(file) {
     const src = state.audioPreviews[file.id];
     const key = `attachment-${file.id}`;
+    const playing = isVoicePlaying(file);
     return h("div", { class: "voice-note-card" }, [
-      h("button", { type: "button", class: "voice-play-btn", title: "Play voice note", "aria-label": "Play voice note", onclick: () => toggleVoicePlayback(file) }, [icon("Play", 18)]),
+      h("button", {
+        type: "button",
+        class: playing ? "voice-play-btn playing" : "voice-play-btn",
+        title: playing ? "Pause voice note" : "Play voice note",
+        "aria-label": playing ? "Pause voice note" : "Play voice note",
+        onclick: () => toggleVoicePlayback(file),
+      }, [icon(playing ? "Pause" : "Play", 18)]),
       h("span", { class: "voice-waveform", "aria-hidden": "true" }, waveformBars()),
       h("small", { class: "voice-duration" }, formatDuration(file.duration_seconds)),
       src ? h("audio", { preload: "metadata", src, "data-audio-key": key, onplay: render, onpause: render, onended: render }) : h("button", { type: "button", class: "voice-load-btn", onclick: () => loadAudioPreview(file) }, state.loadingAudio.has(file.id) ? "Loading..." : "Load playback"),
@@ -1523,6 +1531,11 @@
 
   function isAudioFile(file) {
     return String(file?.content_type || "").startsWith("audio/");
+  }
+
+  function isVoicePlaying(file) {
+    const audio = document.querySelector(`audio[data-audio-key="attachment-${file.id}"]`);
+    return !!audio && !audio.paused && !audio.ended;
   }
 
   function fileExtension(file) {

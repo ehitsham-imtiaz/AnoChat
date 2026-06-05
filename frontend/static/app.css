@@ -5227,7 +5227,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .chat-page .bubble.voice-bubble {
   width: fit-content;
-  max-width: min(360px, 72vw);
+  max-width: min(390px, 76vw);
   padding: 0;
   background: transparent;
   border: 0;
@@ -5235,12 +5235,15 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .chat-page .bubble.voice-bubble .bubble-meta {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
   z-index: 3;
 }
 .chat-page .bubble.voice-bubble .message-menu-trigger {
   color: #94a3b8;
+  width: 22px;
+  height: 36px;
 }
 .chat-page .bubble.attachment-bubble:not(.voice-bubble) {
   width: fit-content;
@@ -5301,17 +5304,17 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .chat-page .own .bubble.voice-bubble {
   width: fit-content;
-  max-width: min(360px, 72vw);
+  max-width: min(390px, 76vw);
   background: transparent;
   box-shadow: none;
 }
 .chat-page .voice-note-card {
-  width: min(340px, 72vw);
+  width: min(360px, 76vw);
   min-height: 78px;
-  grid-template-columns: 46px minmax(150px, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: 46px minmax(150px, 1fr) auto 24px;
+  gap: 12px;
   border-radius: 18px;
-  padding: 14px 18px;
+  padding: 14px 40px 14px 18px;
   background: #ffffff;
   box-shadow: 0 14px 32px rgba(15,23,42,.08);
 }
@@ -5329,11 +5332,19 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   background: #e5f3ff;
   cursor: pointer;
 }
+.chat-page .voice-play-btn.playing {
+  color: #ffffff;
+  background: #0b8cff;
+}
 .chat-page .voice-play-btn .icon {
   width: 17px;
   height: 17px;
   fill: currentColor;
   stroke-width: 0;
+}
+.chat-page .voice-play-btn.playing .icon {
+  fill: none;
+  stroke-width: 2.6;
 }
 .chat-page .voice-waveform {
   min-width: 0;
@@ -5355,6 +5366,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   color: #737b8c;
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 .chat-page .voice-note-card audio {
   display: none;
