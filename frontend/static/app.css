@@ -363,37 +363,20 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   display: grid;
   place-items: center;
   padding: 24px;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(37,99,235,.16), transparent 280px),
-    radial-gradient(circle at 82% 70%, rgba(20,184,166,.16), transparent 320px),
-    var(--bg);
+  background: var(--bg);
 }
-.boot-card {
-  width: min(420px, 100%);
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-  padding: 34px;
-  border: 1px solid var(--line);
-  border-radius: 30px;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  box-shadow: 0 24px 70px rgba(15, 23, 42, .12);
-  backdrop-filter: blur(18px);
-  text-align: center;
-}
-.boot-card .brand-row {
-  justify-self: center;
-  color: var(--text);
-}
-.boot-card h1 {
-  margin: 0;
-  font-size: 28px;
+.boot-loader-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-weight: 800;
 }
 .boot-loader {
-  width: 58px;
-  height: 58px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  border: 5px solid color-mix(in srgb, var(--primary) 14%, transparent);
+  border: 3px solid color-mix(in srgb, var(--primary) 16%, transparent);
   border-top-color: var(--primary);
   animation: spin .85s linear infinite;
 }

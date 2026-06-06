@@ -421,11 +421,9 @@
 
   function bootView() {
     return h("main", { class: "boot-screen" }, [
-      h("div", { class: "boot-card" }, [
-        h("div", { class: "brand-row" }, [h("span", { class: "brand-mark" }, "A"), h("strong", {}, "AnoChat")]),
+      h("div", { class: "boot-loader-wrap" }, [
         h("div", { class: "boot-loader" }),
-        h("h1", {}, "Opening workspace"),
-        h("p", { class: "muted" }, "Restoring your signed-in session..."),
+        h("span", {}, "Loading..."),
       ]),
     ]);
   }
