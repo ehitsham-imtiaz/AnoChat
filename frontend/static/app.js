@@ -851,22 +851,27 @@
     }
   }
 
-  async function loadAll() {
-    state.user = await apiClient.get("/api/auth/me");
-    if (!availableNavItems().some((item) => item.key === state.tab)) {
-      state.tab = "dashboard";
-      localStorage.setItem("anochat_tab", state.tab);
-    }
-    await Promise.all([loadNotifications(), loadPushSettings(), loadTab(state.tab)]);
-  }
-
   async function bootstrap() {
     state.bootstrapping = true;
     render();
     try {
-      await loadAll();
+      state.user = await apiClient.get("/api/auth/me");
+      if (!availableNavItems().some((item) => item.key === state.tab)) {
+        state.tab = "dashboard";
+        localStorage.setItem("anochat_tab", state.tab);
+      }
+      state.bootstrapping = false;
+      state.loading = true;
+      render();
       startPresenceSync();
       startMessageSync();
+      try {
+        await Promise.all([loadNotifications(), loadPushSettings(), loadTab(state.tab)]);
+      } catch (err) {
+        const message = err.message || "Workspace data is still loading. Please refresh if it does not appear.";
+        state.error = message;
+        toast(message, "error");
+      }
     } catch (err) {
       stopPresenceSync();
       stopMessageSync();
