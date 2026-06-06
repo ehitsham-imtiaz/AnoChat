@@ -455,7 +455,6 @@
       h("div", { class: "sidebar-head" }, [
         h("div", { class: "sidebar-brand" }, [h("span", { class: "sidebar-logo" }, [icon("MessageCircle", 24)]), h("span", { class: "brand-text" }, "AnoChat")]),
         h("button", { class: "sidebar-collapse desktop-only", onclick: toggleSidebar, title: "Collapse sidebar" }, [icon(state.sidebarCollapsed ? "ChevronRight" : "ChevronLeft", 18)]),
-        h("button", { class: "icon-btn mobile-only", onclick: () => { state.mobileSidebarOpen = false; render(); }, title: "Close menu" }, [icon("X")]),
       ]),
       h("nav", { class: "nav-list" }, availableNavItems().map((item) => h("button", {
         class: state.tab === item.key ? "nav-link active" : "nav-link",
