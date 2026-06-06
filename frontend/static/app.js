@@ -57,7 +57,7 @@
     chatMessageSearch: "",
     chatHeaderMenuOpen: false,
     renderCycle: 0,
-    filters: { projectSearch: "", projectStatus: "all", projectPriority: "all", logSearch: "", logType: "all", userSearch: "", chatterSearch: "" },
+    filters: { projectSearch: "", projectStatus: "all", projectPriority: "all", logSearch: "", logType: "all", userSearch: "", chatterSearch: "", chatterFilter: "all" },
     modal: null,
     toasts: [],
     attachmentPreviews: {},
@@ -1125,7 +1125,7 @@
           h("div", { class: "panel-title chat-panel-title" }, [
             h("div", {}, [h("h2", {}, "Conversations"), h("p", { class: "muted" }, "Project and team chatters")]),
           ]),
-          searchBox("Search conversations...", "chatterSearch"),
+          chatterSearchControls(),
           chatterList(),
         ]),
         h("article", { class: state.chatSearchOpen ? "chat-window card search-open" : "chat-window card" }, [
@@ -1158,8 +1158,36 @@
 
   function filteredChatters(limit) {
     const q = state.filters.chatterSearch.toLowerCase();
-    const rows = state.chatters.filter((c) => !q || [c.name, c.last_message_preview, projectName(c.project_id)].join(" ").toLowerCase().indexOf(q) >= 0);
+    const mode = state.filters.chatterFilter || "all";
+    const rows = state.chatters.filter((c) => {
+      const matchesSearch = !q || [c.name, c.last_message_preview, projectName(c.project_id)].join(" ").toLowerCase().indexOf(q) >= 0;
+      const matchesMode = mode === "all"
+        || (mode === "unread" && Number(c.unread_count || 0) > 0)
+        || (mode === "groups" && (c.members || []).length > 2);
+      return matchesSearch && matchesMode;
+    });
     return limit ? rows.slice(0, limit) : rows;
+  }
+
+  function chatterSearchControls() {
+    const filters = [
+      ["all", "All"],
+      ["unread", "Unread"],
+      ["groups", "Groups"],
+    ];
+    return h("div", { class: "chatter-search-controls" }, [
+      searchBox("Search", "chatterSearch"),
+      h("div", { class: "chatter-filter-chips", role: "tablist", "aria-label": "Conversation filters" }, filters.map(([value, label]) => h("button", {
+        type: "button",
+        class: state.filters.chatterFilter === value ? "active" : "",
+        role: "tab",
+        "aria-selected": state.filters.chatterFilter === value ? "true" : "false",
+        onclick: () => {
+          state.filters.chatterFilter = value;
+          render();
+        },
+      }, label))),
+    ]);
   }
 
   function chatHeaderIdentity(active) {

@@ -1570,13 +1570,43 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   background: linear-gradient(135deg, #2563eb, #0ea5e9);
   box-shadow: 0 12px 26px rgba(37,99,235,.22);
 }
-.conversation-panel .search-box {
+.chatter-search-controls {
+  display: grid;
+  gap: 8px;
   margin-bottom: 14px;
 }
+.conversation-panel .search-box {
+  margin-bottom: 0;
+}
 .conversation-panel .search-box input {
-  min-height: 48px;
-  border-radius: 16px;
+  min-height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
   background: var(--surface-2);
+}
+.chatter-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chatter-filter-chips::-webkit-scrollbar {
+  display: none;
+}
+.chatter-filter-chips button {
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.chatter-filter-chips button.active {
+  color: #047857;
+  background: rgba(16, 185, 129, .16);
 }
 .conversation-list {
   gap: 10px;
@@ -3931,12 +3961,21 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 :root[data-theme="dark"] .conversation-panel .search-box input {
   color: #f8fafc;
-  border-color: #334155;
-  background: #172033;
+  border-color: #263244;
+  background: #1f2a33;
+  box-shadow: none;
 }
 :root[data-theme="dark"] .conversation-panel .search-box input::placeholder,
 :root[data-theme="dark"] .composer-input-wrap input::placeholder {
   color: #94a3b8;
+}
+:root[data-theme="dark"] .chatter-filter-chips button {
+  color: #94a3b8;
+  background: rgba(51, 65, 85, .55);
+}
+:root[data-theme="dark"] .chatter-filter-chips button.active {
+  color: #34d399;
+  background: rgba(16, 185, 129, .18);
 }
 :root[data-theme="dark"] .conversation {
   color: #f8fafc;
@@ -5363,9 +5402,9 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   font-size: 12px;
 }
 .chat-page .conversation-panel .search-box input {
-  min-height: 44px;
+  min-height: 36px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 8px;
   background: #f8fafc;
   box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .68);
 }
