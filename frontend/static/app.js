@@ -53,6 +53,9 @@
     lastTypingPingAt: 0,
     mention: { open: false, query: "" },
     openMessageMenu: null,
+    chatSearchOpen: false,
+    chatMessageSearch: "",
+    chatHeaderMenuOpen: false,
     renderCycle: 0,
     filters: { projectSearch: "", projectStatus: "all", projectPriority: "all", logSearch: "", logType: "all", userSearch: "", chatterSearch: "" },
     modal: null,
@@ -259,9 +262,9 @@
 
   function captureSearchFocus() {
     const input = document.activeElement;
-    if (!input || !input.matches?.(".search-box input[data-search-key]")) return null;
+    if (!input || !input.matches?.(".search-box input[data-search-key], .chat-message-search input")) return null;
     return {
-      key: input.dataset.searchKey,
+      key: input.dataset.searchKey || "chat-message-search",
       start: input.selectionStart,
       end: input.selectionEnd,
     };
@@ -298,7 +301,9 @@
 
   function restoreSearchFocus(searchFocus) {
     if (!searchFocus || state.modal) return;
-    const input = document.querySelector(`.search-box input[data-search-key="${searchFocus.key}"]`);
+    const input = searchFocus.key === "chat-message-search"
+      ? document.querySelector(".chat-message-search input")
+      : document.querySelector(`.search-box input[data-search-key="${searchFocus.key}"]`);
     if (!input) return;
     input.focus({ preventScroll: true });
     if (document.activeElement !== input) return;
@@ -1123,12 +1128,13 @@
           searchBox("Search conversations...", "chatterSearch"),
           chatterList(),
         ]),
-        h("article", { class: "chat-window card" }, [
+        h("article", { class: state.chatSearchOpen ? "chat-window card search-open" : "chat-window card" }, [
           h("div", { class: "chat-head" }, [
             active ? chatHeaderIdentity(active) : h("div", { class: "chat-header-identity" }, [h("span", { class: "chat-header-avatar" }, [icon("MessagesSquare", 22)]), h("span", {}, [h("h2", {}, "Messages"), h("p", { class: "muted" }, "Select a conversation")])]),
             active ? chatHeaderActions(active) : null,
           ]),
-          h("div", { class: "message-stream" }, active ? (state.messages.length ? messageTimeline(state.messages) : [chatEmptyState()]) : [chatEmptyState("Select a conversation", "Choose a chatter from the list to view messages.")]),
+          active && state.chatSearchOpen ? chatMessageSearchBar() : null,
+          h("div", { class: "message-stream" }, active ? (visibleChatMessages().length ? messageTimeline(visibleChatMessages()) : [chatEmptyState(state.chatMessageSearch ? "No matching messages" : "No messages yet", state.chatMessageSearch ? "Try another search term." : "Start the conversation with a message.")]) : [chatEmptyState("Select a conversation", "Choose a chatter from the list to view messages.")]),
           active ? typingIndicator() : null,
           active ? messageComposer() : null,
         ]),
@@ -1168,8 +1174,77 @@
 
   function chatHeaderActions(active) {
     return h("div", { class: "chat-head-actions" }, [
-      h("button", { type: "button", title: "Search", "aria-label": "Search messages" }, [icon("Search", 19)]),
-      h("button", { type: "button", title: "More", "aria-label": "More" }, [icon("MoreVertical", 18)]),
+      h("button", {
+        type: "button",
+        title: "Search messages",
+        "aria-label": "Search messages",
+        class: state.chatSearchOpen ? "active" : "",
+        onclick: toggleChatSearch,
+      }, [icon("Search", 19)]),
+      h("span", { class: "chat-header-menu-wrap" }, [
+        h("button", {
+          type: "button",
+          title: "Conversation options",
+          "aria-label": "Conversation options",
+          class: state.chatHeaderMenuOpen ? "active" : "",
+          onclick: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            state.chatHeaderMenuOpen = !state.chatHeaderMenuOpen;
+            render();
+          },
+        }, [icon("MoreVertical", 18)]),
+        state.chatHeaderMenuOpen ? chatHeaderMenu(active) : null,
+      ]),
+    ]);
+  }
+
+  function chatMessageSearchBar() {
+    return h("div", { class: "chat-message-search" }, [
+      icon("Search", 17),
+      h("input", {
+        type: "search",
+        placeholder: "Search messages...",
+        value: state.chatMessageSearch,
+        oninput: (event) => {
+          state.chatMessageSearch = event.target.value;
+          render();
+        },
+      }),
+      state.chatMessageSearch ? h("button", {
+        type: "button",
+        title: "Clear search",
+        "aria-label": "Clear search",
+        onclick: () => {
+          state.chatMessageSearch = "";
+          render();
+        },
+      }, [icon("X", 15)]) : null,
+    ]);
+  }
+
+  function visibleChatMessages() {
+    const query = String(state.chatMessageSearch || "").trim().toLowerCase();
+    if (!query) return state.messages;
+    return state.messages.filter((message) => [
+      message.body,
+      userName(message.sender_id),
+      ...(message.attachments || []).map((file) => file.filename || ""),
+    ].join(" ").toLowerCase().indexOf(query) >= 0);
+  }
+
+  function toggleChatSearch() {
+    state.chatSearchOpen = !state.chatSearchOpen;
+    if (!state.chatSearchOpen) state.chatMessageSearch = "";
+    state.chatHeaderMenuOpen = false;
+    render();
+  }
+
+  function chatHeaderMenu(active) {
+    return h("span", { class: "chat-header-menu" }, [
+      h("button", { type: "button", onclick: () => { state.chatHeaderMenuOpen = false; state.chatterInfoOpen = !state.chatterInfoOpen; render(); } }, [icon("Eye", 14), h("span", {}, state.chatterInfoOpen ? "Hide details" : "Show details")]),
+      canManage() ? h("button", { type: "button", onclick: () => { state.chatHeaderMenuOpen = false; openModal("chatter", active); } }, [icon("Edit", 14), h("span", {}, "Edit chatter")]) : null,
+      canDeleteChatter(active) ? h("button", { type: "button", class: "danger", onclick: () => { state.chatHeaderMenuOpen = false; confirmAction("Delete chatter?", "This hides the chatter from the active list.", () => deleteChatter(active.id)); } }, [icon("Trash", 14), h("span", {}, "Delete chatter")]) : null,
     ]);
   }
 
@@ -1238,7 +1313,6 @@
     const canToggle = count > limit;
     return h("div", { class: "chat-info-section-title" }, [
       h("span", { class: "chat-info-title-main" }, [icon(iconName, 14), h("span", {}, label)]),
-      h("span", { class: "chat-info-title-count" }, String(count)),
       canToggle ? h("button", {
         type: "button",
         class: "chat-info-see-all",
@@ -2624,6 +2698,9 @@
       state.editingMessage = null;
       state.editingBody = "";
       state.openMessageMenu = null;
+      state.chatSearchOpen = false;
+      state.chatMessageSearch = "";
+      state.chatHeaderMenuOpen = false;
       state.pendingVoiceDuration = null;
       state.messages = await apiClient.get(`/api/chatters/${id}/messages`);
       markChatterReadLocally(id);
@@ -2651,6 +2728,9 @@
     state.editingBody = "";
     state.chatInfoExpanded = { members: false, images: false, documents: false };
     state.openMessageMenu = null;
+    state.chatSearchOpen = false;
+    state.chatMessageSearch = "";
+    state.chatHeaderMenuOpen = false;
     state.typingUsers = [];
     state.lastTypingPingAt = 0;
     localStorage.setItem("anochat_tab", "chatters");
