@@ -35,7 +35,7 @@
     emailLogs: [],
     stats: null,
     operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
-    activeChatter: null,
+    activeChatter: storedActiveChatterId(),
     chatterInfoOpen: true,
     chatInfoExpanded: { members: false, images: false, documents: false },
     scrollMessagesBottom: false,
@@ -62,6 +62,32 @@
     audioState: {},
     loadingAudio: new Set(),
   };
+
+  function storedActiveChatterId() {
+    const raw = localStorage.getItem("anochat_active_chatter");
+    const id = Number(raw);
+    return raw && Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  function sameId(a, b) {
+    if (a === null || a === undefined || b === null || b === undefined) return false;
+    return Number(a) === Number(b);
+  }
+
+  function setActiveChatter(id) {
+    const nextId = Number(id);
+    if (Number.isFinite(nextId) && nextId > 0) {
+      state.activeChatter = nextId;
+      localStorage.setItem("anochat_active_chatter", String(nextId));
+      return;
+    }
+    clearActiveChatter();
+  }
+
+  function clearActiveChatter() {
+    state.activeChatter = null;
+    localStorage.removeItem("anochat_active_chatter");
+  }
 
   function h(tag, props, children) {
     const el = document.createElement(tag);
@@ -568,6 +594,7 @@
       apiClient.setToken(result.access_token);
       state.user = result.user;
       state.tab = "dashboard";
+      clearActiveChatter();
       localStorage.setItem("anochat_tab", "dashboard");
       broadcastPresenceChange(state.user);
       startPresenceSync();
@@ -604,6 +631,7 @@
       stopPresenceSync();
       stopMessageSync();
       apiClient.clearToken();
+      clearActiveChatter();
       Object.assign(state, {
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
@@ -740,7 +768,7 @@
         apiClient.get("/api/notifications"),
         loadTypingUsers(chatterId),
       ]);
-      if (state.activeChatter !== chatterId || state.tab !== "chatters") return;
+      if (!sameId(state.activeChatter, chatterId) || state.tab !== "chatters") return;
       const nextSignature = messageSignature(messages);
       const previousCount = state.messages.length;
       const previousLast = state.messages[state.messages.length - 1]?.id || null;
@@ -781,7 +809,7 @@
       state.chatters = chatters;
       state.notifications = notifications;
       if (state.activeChatter && !state.chatters.some((item) => Number(item.id) === Number(state.activeChatter))) {
-        state.activeChatter = null;
+        clearActiveChatter();
         state.messages = [];
         state.typingUsers = [];
         state.lastMessageSignature = "";
@@ -874,7 +902,7 @@
     state.chatters = await apiClient.get("/api/chatters");
     if (options.listOnly) return;
     if (state.activeChatter && !state.chatters.some((item) => Number(item.id) === Number(state.activeChatter))) {
-      state.activeChatter = null;
+      clearActiveChatter();
     }
     if (!state.activeChatter) {
       state.messages = [];
@@ -1037,7 +1065,7 @@
   }
 
   function chattersView() {
-    const active = state.chatters.find((item) => item.id === state.activeChatter);
+    const active = state.chatters.find((item) => sameId(item.id, state.activeChatter));
     const showInfo = !!active && state.chatterInfoOpen;
     return page([
       h("section", { class: showInfo ? "chat-shell info-open" : "chat-shell" }, [
@@ -1065,8 +1093,8 @@
   function chatterList(limit, openOnClick) {
     const rows = filteredChatters(limit);
     return rows.length ? h("div", { class: "conversation-list" }, rows.map((c) => h("button", {
-      class: c.id === state.activeChatter ? "conversation active" : "conversation",
-      "aria-current": c.id === state.activeChatter ? "true" : null,
+      class: sameId(c.id, state.activeChatter) ? "conversation active" : "conversation",
+      "aria-current": sameId(c.id, state.activeChatter) ? "true" : null,
       onclick: () => openOnClick ? openChatter(c.id) : selectChatter(c.id),
     }, [
       h("span", { class: "conversation-avatar" }, [h("i", { class: "online-dot" }), initials(c.name)]),
@@ -1224,7 +1252,7 @@
   }
 
   function messageBubble(message) {
-    const own = message.sender_id === state.user.id;
+    const own = sameId(message.sender_id, state.user.id);
     const editing = state.editingMessage && Number(state.editingMessage.id) === Number(message.id);
     const editable = canEditMessage(message);
     const deletedByCurrentUser = Number(message.deleted_by_id) === Number(state.user?.id);
@@ -1389,7 +1417,7 @@
   }
 
   function messageComposer() {
-    const active = state.chatters.find((item) => item.id === state.activeChatter);
+    const active = state.chatters.find((item) => sameId(item.id, state.activeChatter));
     if (chatterIsReadOnly(active)) {
       return h("div", { class: "composer read-only-composer" }, [
         h("span", { class: "read-only-lock" }, [icon("Lock", 16)]),
@@ -2497,8 +2525,8 @@
   async function deleteProject(id) {
     await run(async () => {
       await apiClient.del(`/api/projects/${id}`);
-      if (state.activeChatter && state.chatters.some((chatter) => chatter.project_id === id && chatter.id === state.activeChatter)) {
-        state.activeChatter = null;
+      if (state.activeChatter && state.chatters.some((chatter) => sameId(chatter.project_id, id) && sameId(chatter.id, state.activeChatter))) {
+        clearActiveChatter();
       }
       await Promise.all([loadProjects(), loadChatters()]);
     }, "Project deleted.");
@@ -2526,9 +2554,9 @@
   }
 
   async function selectChatter(id) {
-    if (state.activeChatter === id) return;
+    if (sameId(state.activeChatter, id) && state.messages.length) return;
     try {
-      state.activeChatter = id;
+      setActiveChatter(id);
       state.mention = { open: false, query: "" };
       state.replyTo = null;
       state.editingMessage = null;
@@ -2549,10 +2577,10 @@
   }
 
   async function openChatter(id) {
-    if (state.tab === "chatters" && state.activeChatter === id) return;
+    if (state.tab === "chatters" && sameId(state.activeChatter, id) && state.messages.length) return;
     if (state.activeChatter && state.composerBody.trim()) await syncTypingState(false, true);
     cancelVoiceRecording(true);
-    state.activeChatter = id;
+    setActiveChatter(id);
     state.tab = "chatters";
     state.pendingAttachment = null;
     state.pendingVoiceDuration = null;
@@ -2610,16 +2638,16 @@
       state.pendingVoicePreviewUrl = null;
       state.replyTo = null;
       state.mention = { open: false, query: "" };
-      if (state.activeChatter === chatterId) {
+      if (sameId(state.activeChatter, chatterId)) {
         state.messages = state.messages.concat(savedMessage);
-        const current = state.chatters.find((item) => item.id === chatterId);
+        const current = state.chatters.find((item) => sameId(item.id, chatterId));
         if (current) {
           current.last_message_preview = savedMessage.body;
           current.last_message_author_id = savedMessage.sender_id;
         }
         if (attachmentIds.length) state.messages = await apiClient.get(`/api/chatters/${chatterId}/messages`);
         state.lastMessageSignature = messageSignature(state.messages);
-        state.activeChatter = chatterId;
+        setActiveChatter(chatterId);
       }
       state.scrollMessagesBottom = true;
     } catch (err) {
@@ -2636,14 +2664,14 @@
     const chatterId = state.activeChatter;
     try {
       const deleted = await apiClient.del(`/api/messages/${id}`);
-      state.messages = state.messages.map((message) => message.id === id ? deleted : message);
+      state.messages = state.messages.map((message) => sameId(message.id, id) ? deleted : message);
       if (state.editingMessage && Number(state.editingMessage.id) === Number(id)) {
         state.editingMessage = null;
         state.editingBody = "";
       }
       state.lastMessageSignature = messageSignature(state.messages);
       if (chatterId) {
-        const current = state.chatters.find((item) => item.id === chatterId);
+        const current = state.chatters.find((item) => sameId(item.id, chatterId));
         const visibleMessages = state.messages;
         const last = visibleMessages[visibleMessages.length - 1];
         if (current) {
@@ -2709,7 +2737,7 @@
   async function deleteChatter(id) {
     await run(async () => {
       await apiClient.del(`/api/chatters/${id}`);
-      state.activeChatter = null;
+      clearActiveChatter();
       await loadChatters();
     }, "Chatter deleted.");
   }
