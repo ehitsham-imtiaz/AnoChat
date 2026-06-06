@@ -781,13 +781,13 @@
       state.chatters = chatters;
       state.notifications = notifications;
       if (state.activeChatter && !state.chatters.some((item) => Number(item.id) === Number(state.activeChatter))) {
-        state.activeChatter = state.chatters[0]?.id || null;
+        state.activeChatter = null;
+        state.messages = [];
+        state.typingUsers = [];
+        state.lastMessageSignature = "";
       }
-      if (state.tab === "chatters" && state.activeChatter && !state.sendingMessage && !isAudioPlaying()) {
-        state.messages = await apiClient.get(`/api/chatters/${state.activeChatter}/messages`);
-        markChatterReadLocally(state.activeChatter);
-      }
-      if ((!state.modal || state.modal.type === "profile") && !isAudioPlaying()) {
+      const shouldRenderPresence = state.tab !== "chatters" || !state.activeChatter || state.modal?.type === "profile";
+      if (shouldRenderPresence && (!state.modal || state.modal.type === "profile") && !isAudioPlaying()) {
         if (state.modal?.type === "profile") state.modal = { type: "profile", data: me };
         render();
       }
@@ -873,10 +873,17 @@
   async function loadChatters(options = {}) {
     state.chatters = await apiClient.get("/api/chatters");
     if (options.listOnly) return;
-    if (!state.activeChatter && state.chatters.length) state.activeChatter = state.chatters[0].id;
-    if (state.activeChatter && !state.chatters.some((item) => item.id === state.activeChatter)) state.activeChatter = state.chatters[0]?.id || null;
-    state.messages = state.activeChatter ? await apiClient.get(`/api/chatters/${state.activeChatter}/messages`) : [];
-    state.typingUsers = state.activeChatter ? await loadTypingUsers(state.activeChatter) : [];
+    if (state.activeChatter && !state.chatters.some((item) => Number(item.id) === Number(state.activeChatter))) {
+      state.activeChatter = null;
+    }
+    if (!state.activeChatter) {
+      state.messages = [];
+      state.typingUsers = [];
+      state.lastMessageSignature = "";
+      return;
+    }
+    state.messages = await apiClient.get(`/api/chatters/${state.activeChatter}/messages`);
+    state.typingUsers = await loadTypingUsers(state.activeChatter);
     markChatterReadLocally(state.activeChatter);
     state.lastMessageSignature = messageSignature(state.messages);
   }
