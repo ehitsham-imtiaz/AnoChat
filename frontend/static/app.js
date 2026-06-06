@@ -63,7 +63,9 @@
     audioPreviews: {},
     audioState: {},
     loadingAudio: new Set(),
+    audioLoadErrors: {},
     pendingAudioRender: false,
+    chatterLoadToken: 0,
   };
 
   function storedActiveChatterId() {
@@ -124,6 +126,7 @@
       HelpCircle: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/>',
       Image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
       Lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      LoaderCircle: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
       LayoutDashboard: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
       LogOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
       Mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 6L2 7"/>',
@@ -239,8 +242,10 @@
       toastRegion(),
     ]));
     afterRender(messageScrollTop, shouldScrollMessagesBottom, renderCycle, composerFocus, searchFocus);
-    ensureVisibleImagePreviews();
-    ensureVisibleAudioPreviews();
+    if (state.tab === "chatters" && state.activeChatter) {
+      ensureVisibleImagePreviews();
+      ensureVisibleAudioPreviews();
+    }
   }
 
   function captureMessageScrollTop() {
@@ -330,6 +335,34 @@
     document.querySelectorAll("audio[data-audio-key]").forEach((audio) => {
       try { audio.pause(); } catch (_) {}
     });
+  }
+
+  function revokeAudioPreviews(fileIds) {
+    const ids = fileIds ? new Set(fileIds.map((id) => String(id))) : null;
+    Object.entries(state.audioPreviews || {}).forEach(([id, url]) => {
+      if (!ids || ids.has(String(id))) {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+        delete state.audioPreviews[id];
+      }
+    });
+    if (!ids) {
+      state.audioState = {};
+      state.audioLoadErrors = {};
+      state.loadingAudio.clear();
+      state.pendingAudioRender = false;
+      return;
+    }
+    ids.forEach((id) => {
+      delete state.audioState[id];
+      delete state.audioLoadErrors[id];
+      state.loadingAudio.delete(Number(id));
+      state.loadingAudio.delete(String(id));
+    });
+  }
+
+  function resetChatterAudioState() {
+    pauseAllAudio();
+    revokeAudioPreviews();
   }
 
   function renderWhenAudioIdle() {
@@ -621,6 +654,7 @@
       try { await apiClient.post("/api/auth/logout", {}); } catch (_) {}
       if (loggedOutUser) broadcastPresenceChange({ ...loggedOutUser, messenger_status: "offline" });
       cancelVoiceRecording(true);
+      resetChatterAudioState();
       stopPresenceSync();
       stopMessageSync();
       apiClient.clearToken();
@@ -629,7 +663,7 @@
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
         activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
-        audioState: {}, pendingAudioRender: false,
+        audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
         chatInfoExpanded: { members: false, images: false, documents: false },
         lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0,
       });
@@ -650,6 +684,7 @@
     state.error = "";
     if (tab !== "chatters") {
       cancelVoiceRecording(true);
+      resetChatterAudioState();
       state.replyTo = null;
       clearPendingVoiceNote();
       state.pendingVoiceDuration = null;
@@ -836,11 +871,12 @@
       stopPresenceSync();
       stopMessageSync();
       apiClient.clearToken();
+      resetChatterAudioState();
       Object.assign(state, {
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
         activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
-        audioState: {}, pendingAudioRender: false,
+        audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
         lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0,
       });
       toast(err.message || "Could not restore your session. Please sign in again.", "error");
@@ -890,6 +926,7 @@
   async function loadProjects() { state.projects = await apiClient.get("/api/projects"); }
   async function loadFiles() { state.files = await apiClient.get("/api/attachments"); }
   async function loadChatters(options = {}) {
+    const loadToken = options.listOnly ? null : ++state.chatterLoadToken;
     state.chatters = await apiClient.get("/api/chatters");
     if (options.listOnly) return;
     if (state.activeChatter && !state.chatters.some((item) => Number(item.id) === Number(state.activeChatter))) {
@@ -901,9 +938,15 @@
       state.lastMessageSignature = "";
       return;
     }
-    state.messages = await apiClient.get(`/api/chatters/${state.activeChatter}/messages`);
-    state.typingUsers = await loadTypingUsers(state.activeChatter);
-    markChatterReadLocally(state.activeChatter);
+    const chatterId = state.activeChatter;
+    const [messages, typingUsers] = await Promise.all([
+      apiClient.get(`/api/chatters/${chatterId}/messages`),
+      loadTypingUsers(chatterId),
+    ]);
+    if (loadToken !== state.chatterLoadToken || !sameId(state.activeChatter, chatterId) || state.tab !== "chatters") return;
+    state.messages = messages;
+    state.typingUsers = typingUsers;
+    markChatterReadLocally(chatterId);
     state.lastMessageSignature = messageSignature(state.messages);
   }
 
@@ -1631,14 +1674,17 @@
     const playing = !!audioState.isPlaying;
     const progress = voiceProgress(file);
     const duration = audioState.duration || file.duration_seconds || 0;
+    const loading = state.loadingAudio.has(file.id);
+    const loadError = state.audioLoadErrors[file.id];
     return h("div", { class: "voice-note-card", "data-file-id": file.id }, [
       h("button", {
         type: "button",
-        class: playing ? "voice-play-btn playing" : "voice-play-btn",
-        title: playing ? "Pause voice note" : "Play voice note",
-        "aria-label": playing ? "Pause voice note" : "Play voice note",
+        class: `${playing ? "voice-play-btn playing" : "voice-play-btn"}${loading ? " loading" : ""}${loadError ? " error" : ""}`,
+        title: loading ? "Loading voice note" : (loadError ? "Retry voice note" : (playing ? "Pause voice note" : "Play voice note")),
+        "aria-label": loading ? "Loading voice note" : (loadError ? "Retry voice note" : (playing ? "Pause voice note" : "Play voice note")),
+        disabled: loading,
         onclick: () => toggleVoicePlayback(file),
-      }, [icon(playing ? "Pause" : "Play", 18)]),
+      }, [icon(loading ? "LoaderCircle" : (playing ? "Pause" : "Play"), 18)]),
       h("span", { class: "voice-waveform", "aria-hidden": "true" }, waveformBars(progress)),
       h("small", { class: "voice-duration" }, formatDuration(playing && audioState.currentTime ? audioState.currentTime : duration)),
       src ? h("audio", {
@@ -1663,7 +1709,8 @@
   async function toggleVoicePlayback(file) {
     if (!file) return;
     if (!state.audioPreviews[file.id]) {
-      await loadAudioPreview(file);
+      const loaded = await loadAudioPreview(file);
+      if (!loaded) return;
     }
     let audio = await findVoiceAudioElement(file);
     if (!audio && state.audioPreviews[file.id] && !isAudioPlaying()) {
@@ -1676,7 +1723,11 @@
     });
     if (audio.paused) {
       if (audio.ended) audio.currentTime = 0;
-      audio.play().catch(() => toast("Could not play voice note.", "error"));
+      audio.play().catch(() => {
+        audio.pause();
+        updateAudioState(file.id, audio);
+        toast("Could not play voice note.", "error");
+      });
     } else {
       audio.pause();
     }
@@ -1996,6 +2047,7 @@
   }
 
   async function ensureVisibleImagePreviews() {
+    const chatterId = state.activeChatter;
     const files = []
       .concat(state.messages.flatMap((message) => message.attachments || []))
       .concat(state.files || [])
@@ -2006,6 +2058,7 @@
       state.loadingPreviews.add(file.id);
       try {
         const blob = await apiClient.get(`/api/attachments/${file.id}`);
+        if (state.tab !== "chatters" || !sameId(state.activeChatter, chatterId)) return;
         state.attachmentPreviews[file.id] = URL.createObjectURL(blob);
         render();
       } catch (_) {
@@ -2017,21 +2070,30 @@
   }
 
   async function loadAudioPreview(file, options = {}) {
-    if (!file || state.loadingAudio.has(file.id)) return;
+    if (!file) return false;
+    const chatterId = state.activeChatter;
+    if (state.loadingAudio.has(file.id)) return false;
     if (state.audioPreviews[file.id]) {
       if (!options.silent && !isAudioPlaying()) render();
-      return;
+      return true;
     }
     state.loadingAudio.add(file.id);
+    delete state.audioLoadErrors[file.id];
     if (!options.silent && !isAudioPlaying()) render();
     try {
       const blob = await apiClient.get(`/api/attachments/${file.id}`);
+      if (state.tab !== "chatters" || !sameId(state.activeChatter, chatterId)) return false;
       state.audioPreviews[file.id] = URL.createObjectURL(blob);
+      return true;
     } catch (err) {
-      toast(err.message || "Could not load voice note.", "error");
+      if (state.tab === "chatters" && sameId(state.activeChatter, chatterId)) {
+        state.audioLoadErrors[file.id] = err.message || "Could not load voice note.";
+        toast(err.message || "Could not load voice note.", "error");
+      }
+      return false;
     } finally {
       state.loadingAudio.delete(file.id);
-      if (!options.silent && !isAudioPlaying()) render();
+      if (!options.silent && state.tab === "chatters" && sameId(state.activeChatter, chatterId) && !isAudioPlaying()) render();
     }
   }
 
@@ -2675,8 +2737,9 @@
 
   async function selectChatter(id) {
     if (sameId(state.activeChatter, id) && state.messages.length) return;
+    const loadToken = ++state.chatterLoadToken;
     try {
-      pauseAllAudio();
+      resetChatterAudioState();
       setActiveChatter(id);
       state.mention = { open: false, query: "" };
       state.replyTo = null;
@@ -2688,13 +2751,16 @@
       state.chatSearchOpen = false;
       state.chatMessageSearch = "";
       state.chatHeaderMenuOpen = false;
-      state.pendingVoiceDuration = null;
+      clearPendingVoiceNote(false, true);
+      state.pendingAttachment = null;
       state.typingUsers = [];
       state.messages = [];
       state.lastMessageSignature = "";
       state.scrollMessagesBottom = false;
       render();
-      state.messages = await apiClient.get(`/api/chatters/${id}/messages`);
+      const messages = await apiClient.get(`/api/chatters/${id}/messages`);
+      if (loadToken !== state.chatterLoadToken || !sameId(state.activeChatter, id) || state.tab !== "chatters") return;
+      state.messages = messages;
       markChatterReadLocally(id);
       state.lastMessageSignature = messageSignature(state.messages);
       state.scrollMessagesBottom = true;
@@ -2710,12 +2776,12 @@
   async function openChatter(id) {
     if (state.tab === "chatters" && sameId(state.activeChatter, id) && state.messages.length) return;
     if (state.activeChatter && state.composerBody.trim()) await syncTypingState(false, true);
-    pauseAllAudio();
+    resetChatterAudioState();
     cancelVoiceRecording(true);
     setActiveChatter(id);
     state.tab = "chatters";
+    clearPendingVoiceNote(false, true);
     state.pendingAttachment = null;
-    state.pendingVoiceDuration = null;
     state.replyTo = null;
     state.editingMessage = null;
     state.editingBody = "";
@@ -2768,26 +2834,30 @@
       const replyToId = state.replyTo && Number(state.replyTo.chatter_id) === Number(chatterId) ? state.replyTo.id : null;
       const savedMessage = await apiClient.post(`/api/chatters/${chatterId}/messages`, { body, attachment_ids: attachmentIds, reply_to_id: replyToId });
       await syncTypingState(false, true);
-      event.target.reset();
-      state.composerBody = "";
-      state.pendingAttachment = null;
-      state.pendingVoiceDuration = null;
-      if (state.pendingVoicePreviewUrl) URL.revokeObjectURL(state.pendingVoicePreviewUrl);
-      state.pendingVoicePreviewUrl = null;
-      state.replyTo = null;
-      state.mention = { open: false, query: "" };
       if (sameId(state.activeChatter, chatterId)) {
+        event.target.reset();
+        state.composerBody = "";
+        state.pendingAttachment = null;
+        state.pendingVoiceDuration = null;
+        if (state.pendingVoicePreviewUrl) URL.revokeObjectURL(state.pendingVoicePreviewUrl);
+        state.pendingVoicePreviewUrl = null;
+        state.replyTo = null;
+        state.mention = { open: false, query: "" };
         state.messages = state.messages.concat(savedMessage);
         const current = state.chatters.find((item) => sameId(item.id, chatterId));
         if (current) {
           current.last_message_preview = savedMessage.body;
           current.last_message_author_id = savedMessage.sender_id;
         }
-        if (attachmentIds.length) state.messages = await apiClient.get(`/api/chatters/${chatterId}/messages`);
+        if (attachmentIds.length) {
+          const messages = await apiClient.get(`/api/chatters/${chatterId}/messages`);
+          if (!sameId(state.activeChatter, chatterId)) return;
+          state.messages = messages;
+        }
         state.lastMessageSignature = messageSignature(state.messages);
         setActiveChatter(chatterId);
+        state.scrollMessagesBottom = true;
       }
-      state.scrollMessagesBottom = true;
     } catch (err) {
       const message = err.message || String(err);
       state.error = message;
@@ -2802,6 +2872,7 @@
     const chatterId = state.activeChatter;
     try {
       const deleted = await apiClient.del(`/api/messages/${id}`);
+      if (!sameId(state.activeChatter, chatterId)) return;
       state.messages = state.messages.map((message) => sameId(message.id, id) ? deleted : message);
       if (state.editingMessage && Number(state.editingMessage.id) === Number(id)) {
         state.editingMessage = null;
@@ -2843,7 +2914,9 @@
       return;
     }
     try {
+      const chatterId = state.activeChatter;
       const updated = await apiClient.put(`/api/messages/${message.id}`, { body });
+      if (!sameId(state.activeChatter, chatterId)) return;
       state.messages = state.messages.map((item) => Number(item.id) === Number(message.id) ? updated : item);
       state.lastMessageSignature = messageSignature(state.messages);
       state.editingMessage = null;
@@ -2875,6 +2948,7 @@
   async function deleteChatter(id) {
     await run(async () => {
       await apiClient.del(`/api/chatters/${id}`);
+      resetChatterAudioState();
       clearActiveChatter();
       await loadChatters();
     }, "Chatter deleted.");
@@ -3388,10 +3462,11 @@
   window.addEventListener("anochat_session_expired", (event) => {
     stopPresenceSync();
     stopMessageSync();
+    resetChatterAudioState();
     Object.assign(state, {
       user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
       activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
-      audioState: {}, pendingAudioRender: false,
+      audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
       chatInfoExpanded: { members: false, images: false, documents: false },
       lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0, bootstrapping: false, loading: false,
     });

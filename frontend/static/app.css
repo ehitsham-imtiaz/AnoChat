@@ -5956,6 +5956,17 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   color: #ffffff;
   background: #0b8cff;
 }
+.chat-page .voice-play-btn.loading {
+  cursor: wait;
+  opacity: .72;
+}
+.chat-page .voice-play-btn.loading .icon {
+  animation: voice-spin .9s linear infinite;
+}
+.chat-page .voice-play-btn.error {
+  color: #ef4444;
+  background: #fee2e2;
+}
 .chat-page .voice-play-btn .icon {
   width: 17px;
   height: 17px;
@@ -5965,6 +5976,9 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .chat-page .voice-play-btn.playing .icon {
   fill: none;
   stroke-width: 2.6;
+}
+@keyframes voice-spin {
+  to { transform: rotate(360deg); }
 }
 .chat-page .voice-waveform {
   width: 126px;
