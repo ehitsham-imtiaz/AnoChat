@@ -5362,12 +5362,15 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   padding: 0 18px 18px;
   height: calc(100vh - 42px);
   overflow: hidden;
+  display: grid;
+  justify-items: center;
 }
 .chat-page .chat-shell {
+  width: min(100%, 1760px);
   height: 100%;
   min-height: 0;
   gap: 12px;
-  grid-template-columns: 310px minmax(420px, 1fr) 320px;
+  grid-template-columns: minmax(280px, 310px) minmax(520px, 1fr) minmax(280px, 320px);
   border: 1px solid rgba(226, 232, 240, .82);
   border-radius: 30px;
   padding: 12px;
@@ -5376,7 +5379,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   overflow: hidden;
 }
 .chat-page .chat-shell:not(.info-open) {
-  grid-template-columns: 310px minmax(420px, 1fr);
+  grid-template-columns: minmax(280px, 310px) minmax(520px, 1fr);
 }
 .chat-page .conversation-panel,
 .chat-page .chat-window,
@@ -6041,6 +6044,35 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   border: 0;
   border-radius: 10px;
   background: #f3f4f6;
+}
+
+:root[data-theme="dark"] .chat-page .chat-info-panel,
+:root[data-theme="dark"] .chat-page .conversation-details-card {
+  color: #e5e7eb;
+  border-color: #263244;
+  background: #111827;
+  box-shadow: none;
+}
+:root[data-theme="dark"] .chat-page .chat-info-panel .conversation-details-head strong,
+:root[data-theme="dark"] .chat-page .chat-info-section-title,
+:root[data-theme="dark"] .chat-page .conversation-detail-member strong,
+:root[data-theme="dark"] .chat-page .conversation-details-files strong {
+  color: #f8fafc;
+}
+:root[data-theme="dark"] .chat-page .chat-info-panel .conversation-details-head small,
+:root[data-theme="dark"] .chat-page .conversation-details-desc,
+:root[data-theme="dark"] .chat-page .conversation-detail-member small,
+:root[data-theme="dark"] .chat-page .conversation-details-files small,
+:root[data-theme="dark"] .chat-page .conversation-details-empty {
+  color: #94a3b8;
+}
+:root[data-theme="dark"] .chat-page .conversation-detail-member,
+:root[data-theme="dark"] .chat-page .conversation-details-files button {
+  background: transparent;
+}
+:root[data-theme="dark"] .chat-page .chat-info-media-grid button {
+  color: #cbd5e1;
+  background: #172033;
 }
 
 @media (max-width: 1024px) {
