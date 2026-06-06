@@ -5384,14 +5384,15 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: none;
 }
 .chat-page .voice-note-card {
-  width: min(388px, 78vw);
+  width: fit-content;
+  max-width: min(320px, 78vw);
   min-height: 76px;
   display: grid;
-  grid-template-columns: 44px minmax(140px, 1fr) auto;
+  grid-template-columns: 40px 126px auto;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   border-radius: 18px;
-  padding: 14px 42px 14px 18px;
+  padding: 14px 34px 14px 14px;
   background: #ffffff;
   box-shadow: 0 14px 32px rgba(15,23,42,.08);
 }
@@ -5424,7 +5425,8 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   stroke-width: 2.6;
 }
 .chat-page .voice-waveform {
-  min-width: 0;
+  width: 126px;
+  min-width: 126px;
   height: 44px;
   display: flex;
   align-items: center;
@@ -5626,8 +5628,9 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
     font-size: 12px;
   }
   .chat-page .voice-note-card {
-    width: min(360px, calc(100vw - 92px));
-    grid-template-columns: 40px minmax(96px, 1fr) auto;
+    width: fit-content;
+    max-width: calc(100vw - 92px);
+    grid-template-columns: 38px minmax(88px, 112px) auto;
     gap: 10px;
     padding: 12px 38px 12px 14px;
   }
@@ -5636,6 +5639,8 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
     height: 38px;
   }
   .chat-page .voice-waveform {
+    width: 112px;
+    min-width: 88px;
     gap: 2px;
   }
   .chat-page .voice-waveform i {
