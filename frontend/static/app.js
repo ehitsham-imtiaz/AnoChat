@@ -2624,10 +2624,6 @@
       field("Email", inputWrap("Mail", h("input", { name: "email", type: "email", placeholder: "name@company.com", required: true, autocomplete: "new-user-email" }))),
       field("Password", inputWrap("Lock", h("input", { name: "password", type: "password", placeholder: "Minimum 8 characters", required: true, minlength: "8", autocomplete: "new-password" }))),
       field("Role", inputWrap("Users", roleSelect("role", "customer"))),
-      h("label", { class: "check-row form-span" }, [
-        h("input", { type: "checkbox", name: "read_only", value: "true" }),
-        h("span", {}, [h("strong", {}, "Read-only access"), h("small", {}, "User can view assigned workspace data but cannot create, edit, delete, message, or upload.")]),
-      ]),
       h("div", { class: "modal-actions form-span user-modal-footer" }, [
         h("button", { type: "button", class: "btn btn-soft", onclick: closeModal }, "Cancel"),
         h("button", { class: "btn btn-primary user-submit-btn" }, [icon("UserPlus", 16), "Create User"]),
@@ -2645,10 +2641,6 @@
       field("Email", inputWrap("Mail", h("input", { name: "email", type: "email", value: user.email || "", placeholder: "name@company.com", required: true }))),
       field("Password", inputWrap("Lock", h("input", { name: "password", type: "password", placeholder: "Leave blank to keep current password", minlength: "8", autocomplete: "new-password" }))),
       field("Role", inputWrap("Users", roleSelect("role", normalizeRole(roles(user)[0] || "customer")))),
-      h("label", { class: "check-row form-span" }, [
-        h("input", { type: "checkbox", name: "read_only", value: "true", checked: !!user.read_only }),
-        h("span", {}, [h("strong", {}, "Read-only access"), h("small", {}, "User can view assigned workspace data but cannot create, edit, delete, message, or upload.")]),
-      ]),
       h("div", { class: "modal-actions form-span user-modal-footer" }, [
         h("button", { type: "button", class: "btn btn-soft", onclick: closeModal }, "Cancel"),
         h("button", { class: "btn btn-primary user-submit-btn" }, [icon("Check", 16), "Save Changes"]),
@@ -2982,7 +2974,6 @@
         email,
         login: email,
         password: data.password,
-        read_only: data.read_only === "true",
         roles: [role],
       });
       closeModal();
@@ -3171,7 +3162,6 @@
         name: String(data.name).trim(),
         email,
         login: email,
-        read_only: data.read_only === "true",
         roles: [data.role],
       };
       if (String(data.password || "").trim()) payload.password = data.password;
