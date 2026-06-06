@@ -1151,8 +1151,16 @@
       onclick: () => openOnClick ? openChatter(c.id) : selectChatter(c.id),
     }, [
       h("span", { class: "conversation-avatar" }, [h("i", { class: "online-dot" }), initials(c.name)]),
-      h("span", { class: "conversation-copy" }, [h("strong", {}, c.name), h("small", {}, c.last_message_preview || "No messages yet")]),
-      h("span", { class: "conversation-meta" }, [h("small", {}, projectName(c.project_id) || "General"), memberAvatars(c)]),
+      h("span", { class: "conversation-copy" }, [
+        h("span", { class: "conversation-title-row" }, [
+          h("strong", {}, c.name),
+          h("small", { class: "conversation-project" }, projectName(c.project_id) || "General"),
+        ]),
+        h("span", { class: "conversation-preview-row" }, [
+          h("small", {}, c.last_message_preview || "No messages yet"),
+          memberAvatars(c),
+        ]),
+      ]),
     ]))) : h("div", { class: "chat-empty-compact" }, [h("span", {}, [icon("MessagesSquare")]), h("strong", {}, "No conversations"), h("p", {}, "Try another search or create a chatter.")]);
   }
 

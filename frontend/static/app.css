@@ -1431,8 +1431,38 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 .conversation:hover, .conversation.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--surface)); }
 .conversation-avatar { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; color: #ffffff; background: linear-gradient(135deg, var(--primary), #0f766e); font-weight: 900; font-size: 12px; }
-.conversation-copy { min-width: 0; display: grid; gap: 3px; }
-.conversation-copy small, .conversation-project { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-copy { min-width: 0; display: grid; gap: 5px; }
+.conversation-title-row,
+.conversation-preview-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.conversation-title-row strong,
+.conversation-preview-row small,
+.conversation-copy small,
+.conversation-project {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-project {
+  max-width: 42%;
+  flex: 0 1 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.conversation-preview-row small {
+  flex: 1 1 auto;
+  color: var(--muted);
+}
+.conversation-preview-row .member-avatar-stack {
+  flex: 0 0 auto;
+}
 .chat-window { grid-template-rows: auto minmax(0, 1fr) auto; }
 .chat-window:has(.typing-indicator) {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -5421,10 +5451,12 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .68);
 }
 .chat-page .conversation {
-  min-height: 68px;
-  padding: 10px;
+  min-height: 78px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   background: #ffffff;
   box-shadow: none;
 }
@@ -5437,6 +5469,19 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   width: 40px;
   height: 40px;
   box-shadow: none;
+}
+.chat-page .conversation-copy {
+  gap: 7px;
+}
+.chat-page .conversation-title-row strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+.chat-page .conversation-preview-row small {
+  font-size: 12px;
+}
+.chat-page .conversation-preview-row .member-avatar-stack {
+  margin-left: auto;
 }
 .chat-page .chat-head {
   position: relative;
