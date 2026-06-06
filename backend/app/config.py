@@ -1,10 +1,12 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+
     app_name: str = "AnoChat Workspace"
     environment: str = "local"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/anochat"
@@ -31,10 +33,6 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_claims_email: str = "admin@example.com"
     message_edit_window_minutes: int = 10
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
     @property
     def cors_origin_list(self) -> list[str]:
