@@ -5483,6 +5483,20 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .chat-page .conversation-preview-row .member-avatar-stack {
   margin-left: auto;
 }
+:root[data-theme="dark"] .chat-page .conversation {
+  background: #111827;
+}
+:root[data-theme="dark"] .chat-page .conversation:hover,
+:root[data-theme="dark"] .chat-page .conversation.active {
+  background: #172033;
+}
+:root[data-theme="dark"] .chat-page .conversation-title-row strong {
+  color: #f8fafc;
+}
+:root[data-theme="dark"] .chat-page .conversation-project,
+:root[data-theme="dark"] .chat-page .conversation-preview-row small {
+  color: #cbd5e1;
+}
 .chat-page .chat-head {
   position: relative;
   z-index: 150;
