@@ -33,9 +33,7 @@
     lastMessageSignature: "",
     files: [],
     activityLogs: [],
-    emailLogs: [],
     stats: null,
-    operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
     activeChatter: storedActiveChatterId(),
     chatterInfoOpen: false,
     chatInfoExpanded: { members: false, images: false, documents: false },
@@ -367,7 +365,7 @@
         h("span", { class: "hero-pill" }, [icon("Sparkles", 16), "All-in-one. All yours."]),
         h("div", {}, [
           h("h1", { html: "Your workspace,<br><span>one sign-in</span> away." }),
-          h("p", { class: "hero-copy" }, "Access projects, chatter threads, files, users, monitoring, and operations from the standalone workspace."),
+          h("p", { class: "hero-copy" }, "Access projects, chatter threads, files, users, monitoring, and settings from the standalone workspace."),
         ]),
         h("div", { class: "role-grid" }, [
           roleCard("Admin", "Full workspace control", "ShieldCheck"),
@@ -630,11 +628,10 @@
       Object.assign(state, {
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
-        activityLogs: [], emailLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
+        activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
         audioState: {}, pendingAudioRender: false,
         chatInfoExpanded: { members: false, images: false, documents: false },
         lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0,
-        operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
       });
     });
   }
@@ -842,10 +839,9 @@
       Object.assign(state, {
         user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
-        activityLogs: [], emailLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
+        activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
         audioState: {}, pendingAudioRender: false,
         lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0,
-        operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
       });
       toast(err.message || "Could not restore your session. Please sign in again.", "error");
     } finally {
@@ -922,16 +918,6 @@
     if (!canManage()) return;
     state.stats = await apiClient.get("/api/monitoring/stats");
     state.activityLogs = await apiClient.get("/api/activity-logs");
-  }
-  async function loadEmail() { if (canManage()) state.emailLogs = await apiClient.get("/api/email-logs"); }
-  async function loadOperations() {
-    const [tasks, documents, incidents, knowledge] = await Promise.all([
-      apiClient.get("/api/operations/tasks"),
-      apiClient.get("/api/operations/documents"),
-      apiClient.get("/api/operations/incidents"),
-      apiClient.get("/api/operations/knowledge"),
-    ]);
-    state.operations = { tasks, documents, incidents, knowledge };
   }
 
   function dashboardView() {
@@ -2296,69 +2282,6 @@
     ]);
   }
 
-  function filesView() {
-    return page([
-      h("article", { class: "card" }, [cardHeader("Upload Attachment", "Store files locally and link them to projects or chatters"), fileForm()]),
-      h("article", { class: "card" }, [cardHeader("Uploaded Files", "Download or remove stored attachments"), responsiveTable(["File", "Type", "Size", "Project", "Chatter", "Actions"], state.files.map(fileRow))]),
-    ]);
-  }
-
-  function fileRow(file) {
-    return [
-      h("div", { class: "person-cell" }, [icon("Paperclip"), h("span", {}, file.filename)]),
-      file.content_type,
-      prettyBytes(file.size_bytes),
-      projectName(file.project_id),
-      chatterName(file.chatter_id),
-      h("div", { class: "row-actions" }, [
-        h("button", { class: "btn btn-soft", onclick: () => downloadAttachment(file) }, "Download"),
-        h("button", { class: "btn btn-danger", onclick: () => confirmAction("Delete file?", "This removes the local file and metadata.", () => deleteFile(file.id)) }, [icon("Trash"), "Delete"]),
-      ]),
-    ];
-  }
-
-  function fileForm() {
-    return h("form", { class: "form-grid", onsubmit: uploadFile }, [
-      field("File", h("input", { type: "file", name: "file", required: true })),
-      field("Project", selectProjects("project_id", "No project")),
-      field("Chatter", selectChatters("chatter_id", "No chatter")),
-      h("button", { class: "btn btn-primary align-end" }, [icon("Paperclip"), "Upload"]),
-    ]);
-  }
-
-  function emailView() {
-    if (!canManage()) return page([restricted("Email logs are available to admins only.")]);
-    return page([
-      h("article", { class: "card" }, [cardHeader("Inbound Email Test", "Record inbound email payloads"), emailForm()]),
-      h("article", { class: "card" }, [cardHeader("Email Logs", "Captured inbound messages"), responsiveTable(["From", "To", "Subject", "Status", "Date"], state.emailLogs.map((log) => [log.email_from || "", log.email_to || "", log.subject || "", badge(log.status), formatDate(log.created_at)]))]),
-    ]);
-  }
-
-  function emailForm() {
-    return h("form", { class: "form-grid", onsubmit: createEmail }, [
-      field("From", h("input", { name: "email_from", placeholder: "sender@company.com" })),
-      field("To", h("input", { name: "email_to", placeholder: "workspace@company.com" })),
-      field("Subject", h("input", { name: "subject", placeholder: "Subject" })),
-      field("Body", h("input", { name: "body", placeholder: "Message preview" })),
-      h("button", { class: "btn btn-primary align-end" }, "Record"),
-    ]);
-  }
-
-  function operationsView() {
-    return page([
-      h("section", { class: "ops-grid" }, [
-        opsPanel("Tasks", state.operations.tasks, ["name", "stage", "priority"]),
-        opsPanel("Documents", state.operations.documents, ["name", "access_level", "version"]),
-        opsPanel("Incidents", state.operations.incidents, ["name", "state", "priority"]),
-        opsPanel("Knowledge", state.operations.knowledge, ["title", "state", "version"]),
-      ]),
-    ]);
-  }
-
-  function opsPanel(title, rows, keys) {
-    return h("article", { class: "card" }, [cardHeader(title, "Migrated operational records"), rows.length ? responsiveTable(keys.map(cap), rows.map((row) => keys.map((key) => row[key] || ""))) : emptyState("No records yet.")]);
-  }
-
   function modalView() {
     const modal = state.modal;
     return h("div", { class: "modal-backdrop", onclick: closeModal }, [
@@ -3206,34 +3129,6 @@
     }, "User deleted.");
   }
 
-  async function uploadFile(event) {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    if (!form.get("project_id")) form.delete("project_id");
-    if (!form.get("chatter_id")) form.delete("chatter_id");
-    await run(async () => {
-      await apiClient.post("/api/attachments/upload", form);
-      event.target.reset();
-      await loadFiles();
-    }, "File uploaded.");
-  }
-
-  async function deleteFile(id) {
-    await run(async () => {
-      await apiClient.del(`/api/attachments/${id}`);
-      await loadFiles();
-    }, "File deleted.");
-  }
-
-  async function createEmail(event) {
-    event.preventDefault();
-    await run(async () => {
-      await apiClient.post("/api/email/inbound", Object.fromEntries(new FormData(event.target).entries()));
-      event.target.reset();
-      await loadEmail();
-    }, "Inbound email recorded.");
-  }
-
   function page(children, className) { return h("main", { class: className ? `page ${className}` : "page" }, children); }
   function cardHeader(title, subtitle, actionLabel, action) {
     return h("div", { class: "card-head" }, [
@@ -3283,14 +3178,6 @@
       items: [{ value: "", label }].concat(state.users.map((u) => ({ value: u.id, label: `${u.name} (${displayRoles(u).join(", ") || "User"})` }))),
     });
   }
-  function selectCustomers(name, label, selected) {
-    const customers = state.users.filter((u) => roles(u).map(normalizeRole).indexOf("customer") >= 0);
-    return dropdown({
-      name,
-      value: selected || "",
-      items: [{ value: "", label }].concat(customers.map((u) => ({ value: u.id, label: `${u.name} (${u.login || u.email})` }))),
-    });
-  }
   function selectCustomersMulti(name, label, selected) {
     const customers = state.users.filter(isCustomerUser);
     return multiDropdown({
@@ -3317,13 +3204,6 @@
       name,
       value: selected || "",
       items: [{ value: "", label }].concat(state.projects.map((p) => ({ value: p.id, label: p.name }))),
-    });
-  }
-  function selectChatters(name, label, selected) {
-    return dropdown({
-      name,
-      value: selected || "",
-      items: [{ value: "", label }].concat(state.chatters.map((c) => ({ value: c.id, label: c.name }))),
     });
   }
   function dropdown(config) {
@@ -3427,11 +3307,6 @@
     ])]);
   }
   function badge(text, type) { return h("span", { class: `badge ${type || ""} ${String(text).toLowerCase()}` }, type === "role" ? roleLabel(text) : cap(text)); }
-  function logBadge(type) {
-    const t = String(type || "activity").toLowerCase();
-    const label = t.indexOf("project") >= 0 ? "project" : t.indexOf("chatter") >= 0 ? "chatter" : t.indexOf("message") >= 0 ? "message" : t.indexOf("file") >= 0 || t.indexOf("attachment") >= 0 ? "file" : t.indexOf("login") >= 0 ? "login" : t.indexOf("user") >= 0 ? "user" : t;
-    return badge(label);
-  }
   function emptyState(text) { return h("div", { class: "empty-state" }, [h("span", {}, [icon("Boxes")]), h("p", {}, text)]); }
   function restricted(text) { return h("article", { class: "card" }, [cardHeader("Restricted", "Your current role cannot access this section."), emptyState(text)]); }
   function userName(id) {
@@ -3450,7 +3325,6 @@
     return `User ${id}`;
   }
   function projectName(id) { return state.projects.find((p) => p.id === id)?.name || ""; }
-  function chatterName(id) { return state.chatters.find((c) => c.id === id)?.name || ""; }
   function projectCustomerNames(project) {
     const customers = (project.members || []).filter(isCustomerUser);
     if (customers.length) return customers.map((user) => user.name || user.login || user.email).join(", ");
@@ -3516,11 +3390,10 @@
     stopMessageSync();
     Object.assign(state, {
       user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], files: [], typingUsers: [],
-      activityLogs: [], emailLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
+      activityLogs: [], stats: null, activeChatter: null, pendingAttachment: null, pendingVoiceDuration: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
       audioState: {}, pendingAudioRender: false,
       chatInfoExpanded: { members: false, images: false, documents: false },
       lastMessageSignature: "", refreshingMessages: false, lastTypingPingAt: 0, bootstrapping: false, loading: false,
-      operations: { tasks: [], documents: [], incidents: [], knowledge: [] },
     });
     toast(event.detail || "Session expired. Please sign in again.", "error");
     render();
