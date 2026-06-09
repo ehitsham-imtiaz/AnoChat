@@ -1082,6 +1082,7 @@
     const nameParts = String(state.user?.name || "AnoChat User").trim().split(/\s+/);
     const firstName = nameParts[0] || "AnoChat";
     const lastName = nameParts.slice(1).join(" ") || "-";
+    const activeSection = state.settingsSection || "settings-profile";
     return page([
       h("section", { class: "settings-shell" }, [
         h("div", { class: "settings-topbar" }, [
@@ -1098,15 +1099,15 @@
         h("h1", { class: "settings-title" }, "Account Settings"),
         h("div", { class: "settings-layout" }, [
           h("aside", { class: "settings-side-menu", "aria-label": "Settings sections" }, [
-          settingsSideItem("My Profile", state.settingsSection === "settings-profile", null, () => jumpToSettingsSection("settings-profile")),
-          settingsSideItem("Password & Security", state.settingsSection === "settings-security", null, () => jumpToSettingsSection("settings-security")),
-          settingsSideItem("Push notifications", state.settingsSection === "settings-push", null, () => jumpToSettingsSection("settings-push")),
-          settingsSideItem("Notifications", state.settingsSection === "settings-notifications", null, () => jumpToSettingsSection("settings-notifications")),
-          settingsSideItem(isAdmin() ? "Access Requests" : "Request Access", state.settingsSection === "settings-access", null, () => jumpToSettingsSection("settings-access")),
-          settingsSideItem("Logout", state.settingsSection === "settings-logout", "danger", () => jumpToSettingsSection("settings-logout")),
-        ]),
-        h("div", { class: "settings-main-panel" }, [
-            h("article", { class: "settings-profile-card", id: "settings-profile" }, [
+            settingsSideItem("My Profile", activeSection === "settings-profile", null, () => jumpToSettingsSection("settings-profile")),
+            settingsSideItem("Password & Security", activeSection === "settings-security", null, () => jumpToSettingsSection("settings-security")),
+            settingsSideItem("Push notifications", activeSection === "settings-push", null, () => jumpToSettingsSection("settings-push")),
+            settingsSideItem("Notifications", activeSection === "settings-notifications", null, () => jumpToSettingsSection("settings-notifications")),
+            settingsSideItem(isAdmin() ? "Access Requests" : "Request Access", activeSection === "settings-access", null, () => jumpToSettingsSection("settings-access")),
+            settingsSideItem("Logout", activeSection === "settings-logout", "danger", () => jumpToSettingsSection("settings-logout")),
+          ]),
+          h("div", { class: "settings-main-panel" }, [
+            activeSection === "settings-profile" ? h("article", { class: "settings-profile-card" }, [
               h("div", { class: "settings-profile-content" }, [
                 h("span", { class: `settings-profile-avatar presence-avatar presence-${status}` }, initials(state.user?.name || "User")),
                 h("span", {}, [
@@ -1116,8 +1117,8 @@
                 ]),
               ]),
               settingsEditButton(() => openModal("profile", state.user)),
-            ]),
-            h("article", { class: "settings-detail-card", id: "settings-security" }, [
+            ]) : null,
+            activeSection === "settings-profile" ? h("article", { class: "settings-detail-card" }, [
               settingsDetailHead("Personal Information", () => openModal("profile", state.user)),
               h("div", { class: "settings-info-grid" }, [
                 settingsInfoItem("First Name", firstName),
@@ -1127,22 +1128,26 @@
                 settingsInfoItem("Role", roleText),
                 settingsInfoItem("Status", cap(status)),
               ]),
-            ]),
-            h("article", { class: "settings-detail-card settings-panel-card notification-history-card", id: "settings-notifications" }, [
-              notificationHistoryPanel(),
-            ]),
-            h("article", { class: "settings-detail-card settings-panel-card push-settings-card", id: "settings-push" }, [
+            ]) : null,
+            activeSection === "settings-security" ? h("article", { class: "settings-detail-card" }, [
+              settingsDetailHead("Password & Security"),
+              h("p", {}, "Password changes and account security controls stay in your profile editor for now."),
+            ]) : null,
+            activeSection === "settings-push" ? h("article", { class: "settings-detail-card settings-panel-card push-settings-card" }, [
               pushSettingsPanel(true),
-            ]),
-            h("article", { class: "settings-detail-card settings-panel-card access-request-card", id: "settings-access" }, [
+            ]) : null,
+            activeSection === "settings-notifications" ? h("article", { class: "settings-detail-card settings-panel-card notification-history-card" }, [
+              notificationHistoryPanel(),
+            ]) : null,
+            activeSection === "settings-access" ? h("article", { class: "settings-detail-card settings-panel-card access-request-card" }, [
               settingsCardHead(isAdmin() ? "Access Requests" : "Request Access", isAdmin() ? "Review workspace access requests." : "Ask an admin for project or chatter access.", "ShieldCheck"),
               accessRequestsPanel(),
-            ]),
-            h("article", { class: "settings-detail-card danger-settings-card", id: "settings-logout" }, [
+            ]) : null,
+            activeSection === "settings-logout" ? h("article", { class: "settings-detail-card danger-settings-card" }, [
               settingsCardHead("Logout", "Sign out of this device safely.", "LogOut"),
               h("p", {}, "You will need to sign in again to access this workspace."),
               h("button", { class: "btn btn-danger btn-block", onclick: confirmLogout }, [icon("LogOut", 16), "Logout"]),
-            ]),
+            ]) : null,
           ]),
         ]),
       ]),
@@ -1160,10 +1165,6 @@
   function jumpToSettingsSection(id) {
     state.settingsSection = id || "settings-profile";
     render();
-    setTimeout(() => {
-      const target = document.getElementById(id);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }
 
   function settingsEditButton(onClick) {
