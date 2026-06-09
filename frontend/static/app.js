@@ -1448,7 +1448,6 @@
           ]),
           h("span", { class: "conversation-preview-row" }, [
             h("small", {}, c.last_message_preview || "No messages yet"),
-            memberAvatars(c),
           ]),
         ]),
       ]);
