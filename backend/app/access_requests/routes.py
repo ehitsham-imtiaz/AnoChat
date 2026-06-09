@@ -10,7 +10,7 @@ from app.database import get_db
 from app.models import AccessRequest, Chatter, Project, Role, User
 from app.notifications.service import notify_users
 from app.rate_limit import access_request_rate_limit_dependency, sensitive_action_rate_limit_dependency
-from app.roles.permissions import can_access_chatter, can_access_project, is_admin, require_roles, require_write_access
+from app.roles.permissions import can_access_chatter, can_access_project, chatter_read_only, is_admin, project_read_only, require_roles, require_write_access
 from app.schemas import AccessRequestCreate, AccessRequestOption, AccessRequestOptionsOut, AccessRequestOut
 
 router = APIRouter(prefix="/api/access-requests", tags=["access requests"])
@@ -74,8 +74,16 @@ def access_request_options(db: Session = Depends(get_db), current_user: User = D
     projects = db.query(Project).order_by(Project.name.asc()).all()
     chatters = db.query(Chatter).filter(Chatter.active.is_(True)).order_by(Chatter.name.asc()).all()
     if not is_admin(current_user):
-        projects = [project for project in projects if not can_access_project(current_user, project)]
-        chatters = [chatter for chatter in chatters if not can_access_chatter(current_user, chatter)]
+        projects = [
+            project
+            for project in projects
+            if not can_access_project(current_user, project) or project_read_only(db, current_user, project)
+        ]
+        chatters = [
+            chatter
+            for chatter in chatters
+            if not can_access_chatter(current_user, chatter) or chatter_read_only(db, current_user, chatter)
+        ]
     return AccessRequestOptionsOut(
         projects=[AccessRequestOption(id=project.id, name=project.name) for project in projects],
         chatters=[AccessRequestOption(id=chatter.id, name=chatter.name) for chatter in chatters],
@@ -101,7 +109,7 @@ def create_access_request(
         if not payload.project_id:
             raise HTTPException(status_code=400, detail="Choose a project")
         project = get_or_404(db, Project, payload.project_id)
-        if can_access_project(current_user, project):
+        if can_access_project(current_user, project) and not project_read_only(db, current_user, project):
             raise HTTPException(status_code=409, detail="You already have access to this project")
         project_id = project.id
         resource_name = project.name
@@ -111,7 +119,7 @@ def create_access_request(
         chatter = get_or_404(db, Chatter, payload.chatter_id)
         if not chatter.active:
             raise HTTPException(status_code=404, detail="Chatter not found")
-        if can_access_chatter(current_user, chatter):
+        if can_access_chatter(current_user, chatter) and not chatter_read_only(db, current_user, chatter):
             raise HTTPException(status_code=409, detail="You already have access to this chatter")
         chatter_id = chatter.id
         resource_name = chatter.name
@@ -161,19 +169,29 @@ def approve_access_request(request_id: int, db: Session = Depends(get_db), curre
         member_ids = [member.id for member in project.members]
         if request.requester_id not in member_ids:
             member_ids.append(request.requester_id)
-        set_project_members(db, project, member_ids, read_only_project_member_ids(db, project.id))
+        project_read_only_ids = [user_id for user_id in read_only_project_member_ids(db, project.id) if user_id != request.requester_id]
+        set_project_members(db, project, member_ids, project_read_only_ids)
         for chatter in db.query(Chatter).filter(Chatter.project_id == project.id, Chatter.active.is_(True)).all():
             chatter_member_ids = [member.id for member in chatter.members]
             if request.requester_id not in chatter_member_ids:
                 chatter_member_ids.append(request.requester_id)
-                set_chatter_members(db, chatter, chatter_member_ids, read_only_chatter_member_ids(db, chatter.id))
+            chatter_read_only_ids = [user_id for user_id in read_only_chatter_member_ids(db, chatter.id) if user_id != request.requester_id]
+            set_chatter_members(db, chatter, chatter_member_ids, chatter_read_only_ids)
         resource_name = project.name
     else:
         chatter = get_or_404(db, Chatter, request.chatter_id)
         member_ids = [member.id for member in chatter.members]
         if request.requester_id not in member_ids:
             member_ids.append(request.requester_id)
-        set_chatter_members(db, chatter, member_ids, read_only_chatter_member_ids(db, chatter.id))
+        chatter_read_only_ids = [user_id for user_id in read_only_chatter_member_ids(db, chatter.id) if user_id != request.requester_id]
+        set_chatter_members(db, chatter, member_ids, chatter_read_only_ids)
+        if chatter.project_id:
+            project = get_or_404(db, Project, chatter.project_id)
+            project_member_ids = [member.id for member in project.members]
+            if request.requester_id not in project_member_ids:
+                project_member_ids.append(request.requester_id)
+            project_read_only_ids = [user_id for user_id in read_only_project_member_ids(db, project.id) if user_id != request.requester_id]
+            set_project_members(db, project, project_member_ids, project_read_only_ids)
         resource_name = chatter.name
 
     request.status = APPROVED
