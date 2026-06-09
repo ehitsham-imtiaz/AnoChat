@@ -87,6 +87,7 @@
     loadingPreviews: new Set(),
     avatarPreviews: {},
     loadingAvatarPreviews: new Set(),
+    avatarRenderScheduled: false,
     audioPreviews: {},
     audioState: {},
     loadingAudio: new Set(),
@@ -256,8 +257,16 @@
       state.avatarPreviews[key] = null;
     } finally {
       state.loadingAvatarPreviews.delete(key);
-      renderWhenAudioIdle();
+      scheduleAvatarPreviewRender();
     }
+  }
+  function scheduleAvatarPreviewRender() {
+    if (state.avatarRenderScheduled) return;
+    state.avatarRenderScheduled = true;
+    window.requestAnimationFrame(() => {
+      state.avatarRenderScheduled = false;
+      renderWhenAudioIdle();
+    });
   }
   function userAvatar(user, className, fallbackLabel) {
     if (user?.avatar_attachment_id) ensureAvatarPreview(user);
