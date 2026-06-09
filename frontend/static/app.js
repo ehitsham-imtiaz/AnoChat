@@ -525,16 +525,27 @@
   }
 
   function sidebar() {
+    const nav = availableNavItems();
+    const primaryNav = nav.filter((item) => item.key !== "settings");
+    const settingsNav = nav.find((item) => item.key === "settings");
     return h("aside", { class: "sidebar" }, [
       h("div", { class: "sidebar-head" }, [
         h("div", { class: "sidebar-brand" }, [h("span", { class: "sidebar-logo" }, [icon("MessageCircle", 24)]), h("span", { class: "brand-text" }, "AnoChat")]),
         h("button", { class: "sidebar-collapse desktop-only", onclick: toggleSidebar, title: "Collapse sidebar" }, [icon(state.sidebarCollapsed ? "ChevronRight" : "ChevronLeft", 18)]),
       ]),
-      h("nav", { class: "nav-list" }, availableNavItems().map((item) => h("button", {
-        class: state.tab === item.key ? "nav-link active" : "nav-link",
-        onclick: () => switchTab(item.key),
-        title: item.label,
-      }, [icon(item.icon), h("span", { class: "nav-label" }, [h("span", {}, item.label), navNotificationBadge(item.key)]), navNotificationDot(item.key)]))),
+      h("nav", { class: "nav-list" }, [
+        ...primaryNav.map((item) => h("button", {
+          class: state.tab === item.key ? "nav-link active" : "nav-link",
+          onclick: () => switchTab(item.key),
+          title: item.label,
+        }, [icon(item.icon), h("span", { class: "nav-label" }, [h("span", {}, item.label), navNotificationBadge(item.key)]), navNotificationDot(item.key)])),
+        settingsNav ? h("span", { class: "nav-divider", "aria-hidden": "true" }) : null,
+        settingsNav ? h("button", {
+          class: state.tab === settingsNav.key ? "nav-link active nav-link-bottom" : "nav-link nav-link-bottom",
+          onclick: () => switchTab(settingsNav.key),
+          title: settingsNav.label,
+        }, [icon(settingsNav.icon), h("span", { class: "nav-label" }, [h("span", {}, settingsNav.label), navNotificationBadge(settingsNav.key)]), navNotificationDot(settingsNav.key)]) : null,
+      ]),
     ]);
   }
 
