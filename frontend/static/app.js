@@ -1353,7 +1353,7 @@
       h("span", { class: "conversation-copy" }, [
         h("span", { class: "conversation-title-row" }, [
           h("strong", {}, c.name),
-          h("small", { class: "conversation-project" }, projectName(c.project_id) || "General"),
+          projectLabelForChatter(c) ? h("small", { class: "conversation-project" }, projectLabelForChatter(c)) : null,
         ]),
         h("span", { class: "conversation-preview-row" }, [
           h("small", {}, c.last_message_preview || "No messages yet"),
@@ -1398,10 +1398,11 @@
   }
 
   function chatHeaderIdentity(active) {
+    const projectLabel = projectLabelForChatter(active);
     return h("button", { type: "button", class: "chat-header-identity chat-info-trigger", onclick: () => toggleChatterInfo(active) }, [
       h("span", { class: "chat-header-avatar" }, initials(active.name)),
       h("span", { class: "chat-header-copy" }, [
-        h("span", { class: "chat-title-row" }, [h("h2", {}, active.name), badge(projectName(active.project_id) || "General chatter", "chat-type")]),
+        h("span", { class: "chat-title-row" }, [h("h2", {}, active.name), badge(projectLabel || "General chatter", "chat-type")]),
         memberAvatars(active),
       ]),
     ]);
@@ -3893,6 +3894,14 @@
     return `User ${id}`;
   }
   function projectName(id) { return state.projects.find((p) => p.id === id)?.name || ""; }
+  function projectLabelForChatter(chatter) {
+    const label = projectName(chatter?.project_id);
+    if (!label) return "";
+    const chatterName = String(chatter?.name || "").trim().toLowerCase();
+    const projectLabel = String(label).trim().toLowerCase();
+    if (chatterName && chatterName === projectLabel) return "";
+    return label;
+  }
   function projectCustomerNames(project) {
     const customers = (project.members || []).filter(isCustomerUser);
     if (customers.length) return customers.map((user) => user.name || user.login || user.email).join(", ");
