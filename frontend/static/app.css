@@ -1762,18 +1762,18 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   display: grid;
   place-items: center;
   border-radius: 22px;
-  color: #1e40af;
-  background: linear-gradient(180deg, rgba(37,99,235,.22), rgba(255,255,255,.96));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+  color: #1239a8;
+  background: linear-gradient(180deg, rgba(37,99,235,.30), rgba(255,255,255,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.82);
 }
 .project-card-mark .icon {
-  width: 30px;
-  height: 30px;
+  width: 31px;
+  height: 31px;
 }
 .project-card-mark svg {
-  width: 30px;
-  height: 30px;
-  stroke-width: 2.25;
+  width: 31px;
+  height: 31px;
+  stroke-width: 2.45;
 }
 .project-card-heading {
   min-width: 0;
@@ -1844,18 +1844,18 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   display: grid;
   place-items: center;
   border-radius: 18px;
-  color: #1e40af;
-  background: linear-gradient(180deg, rgba(37, 99, 235, .22), rgba(255, 255, 255, .96));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.78);
+  color: #1239a8;
+  background: linear-gradient(180deg, rgba(37, 99, 235, .30), rgba(255, 255, 255, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.82);
 }
 .project-stat-icon .icon {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
 }
 .project-stat-icon svg {
-  width: 21px;
-  height: 21px;
-  stroke-width: 2.35;
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.5;
 }
 .project-card-stat small {
   display: block;
