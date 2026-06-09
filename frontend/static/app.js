@@ -1092,8 +1092,6 @@
           ]),
           h("div", { class: "settings-top-actions" }, [
             presenceControl(),
-            h("button", { type: "button", class: "settings-mini-action", onclick: () => openModal("profile", state.user), title: "View profile", "aria-label": "View profile" }, [icon("UserRound", 17)]),
-            h("button", { type: "button", class: "settings-mini-action active", onclick: () => {}, title: "Settings", "aria-label": "Settings" }, [icon("Settings", 17)]),
             h("button", { type: "button", class: "settings-mini-action", onclick: toggleTheme, title: "Toggle theme", "aria-label": "Toggle theme" }, [icon(state.theme === "dark" ? "Sun" : "Moon", 17)]),
           ]),
         ]),
@@ -1105,7 +1103,7 @@
           settingsSideItem("Push notifications", state.settingsSection === "settings-push", null, () => jumpToSettingsSection("settings-push")),
           settingsSideItem("Notifications", state.settingsSection === "settings-notifications", null, () => jumpToSettingsSection("settings-notifications")),
           settingsSideItem(isAdmin() ? "Access Requests" : "Request Access", state.settingsSection === "settings-access", null, () => jumpToSettingsSection("settings-access")),
-          settingsSideItem("Logout", false, "danger", confirmLogout),
+          settingsSideItem("Logout", state.settingsSection === "settings-logout", "danger", () => jumpToSettingsSection("settings-logout")),
         ]),
         h("div", { class: "settings-main-panel" }, [
             h("article", { class: "settings-profile-card", id: "settings-profile" }, [
