@@ -1078,57 +1078,115 @@
     const roleText = displayRoles(state.user).join(", ") || "User";
     const email = state.user?.email || state.user?.login || "No email available";
     const status = state.user?.messenger_status || "offline";
+    const nameParts = String(state.user?.name || "AnoChat User").trim().split(/\s+/);
+    const firstName = nameParts[0] || "AnoChat";
+    const lastName = nameParts.slice(1).join(" ") || "-";
     return page([
-      h("section", { class: "settings-grid" }, [
-        h("article", { class: "settings-card" }, [
-          settingsCardHead("Appearance", "Choose the workspace theme.", "Moon"),
-          h("div", { class: "settings-row" }, [
-            h("span", {}, [h("strong", {}, state.theme === "dark" ? "Dark mode" : "Light mode"), h("small", {}, "Applies instantly across AnoChat.")]),
-            h("button", { class: "settings-toggle", onclick: toggleTheme, "aria-pressed": state.theme === "dark" ? "true" : "false" }, [
-              h("span", { class: state.theme === "dark" ? "active" : "" }, [icon("Moon", 15), "Dark"]),
-              h("span", { class: state.theme === "light" ? "active" : "" }, [icon("Sun", 15), "Light"]),
-            ]),
+      h("section", { class: "settings-shell" }, [
+        h("div", { class: "settings-topbar" }, [
+          h("label", { class: "settings-search" }, [
+            icon("Search", 18),
+            h("input", { type: "search", placeholder: "Search Something...", "aria-label": "Search settings" }),
+            h("button", { type: "button", onclick: (event) => event.preventDefault() }, "Search"),
+          ]),
+          h("div", { class: "settings-top-actions" }, [
+            h("button", { type: "button", class: "settings-mini-action", onclick: refreshNotificationHistory, title: "Refresh notifications", "aria-label": "Refresh notifications" }, [icon("Bell", 17)]),
+            h("button", { type: "button", class: "settings-mini-action", onclick: () => openModal("profile", state.user), title: "View profile", "aria-label": "View profile" }, [icon("UserRound", 17)]),
+            h("button", { type: "button", class: "settings-mini-action active", onclick: () => {}, title: "Settings", "aria-label": "Settings" }, [icon("Settings", 17)]),
+            h("button", { type: "button", class: "settings-mini-action", onclick: toggleTheme, title: "Toggle theme", "aria-label": "Toggle theme" }, [icon(state.theme === "dark" ? "Sun" : "Moon", 17)]),
           ]),
         ]),
-        h("article", { class: "settings-card" }, [
-          settingsCardHead("Notifications / Status", "Review alerts and update your availability.", "Bell"),
-          h("div", { class: "settings-status-grid" }, [
-            h("div", { class: "settings-status-tile" }, [
-              h("small", {}, "Current status"),
-              h("strong", {}, cap(status)),
-              presenceControl(),
+        h("h1", { class: "settings-title" }, "Account Settings"),
+        h("div", { class: "settings-layout" }, [
+          h("aside", { class: "settings-side-menu", "aria-label": "Settings sections" }, [
+            settingsSideItem("My Profile", true),
+            settingsSideItem("Password & Security"),
+            settingsSideItem("Appearance"),
+            settingsSideItem("Notifications"),
+            settingsSideItem(isAdmin() ? "Access Requests" : "Request Access"),
+            settingsSideItem("Data Export"),
+            settingsSideItem("Logout", false, "danger"),
+          ]),
+          h("div", { class: "settings-main-panel" }, [
+            h("article", { class: "settings-profile-card" }, [
+              h("div", { class: "settings-profile-content" }, [
+                h("span", { class: `settings-profile-avatar presence-avatar presence-${status}` }, initials(state.user?.name || "User")),
+                h("span", {}, [
+                  h("strong", {}, state.user?.name || "AnoChat User"),
+                  h("small", {}, roleText),
+                  h("small", {}, email),
+                ]),
+              ]),
+              settingsEditButton(() => openModal("profile", state.user)),
+            ]),
+            h("article", { class: "settings-detail-card" }, [
+              settingsDetailHead("Personal Information", () => openModal("profile", state.user)),
+              h("div", { class: "settings-info-grid" }, [
+                settingsInfoItem("First Name", firstName),
+                settingsInfoItem("Last Name", lastName),
+                settingsInfoItem("Email Address", email),
+                settingsInfoItem("Login", state.user?.login || email),
+                settingsInfoItem("Role", roleText),
+                settingsInfoItem("Status", cap(status)),
+              ]),
+            ]),
+            h("article", { class: "settings-detail-card" }, [
+              settingsDetailHead("Workspace Preferences"),
+              h("div", { class: "settings-preference-list" }, [
+                h("div", { class: "settings-row" }, [
+                  h("span", {}, [h("strong", {}, state.theme === "dark" ? "Dark mode" : "Light mode"), h("small", {}, "Applies instantly across AnoChat.")]),
+                  h("button", { class: "settings-toggle", onclick: toggleTheme, "aria-pressed": state.theme === "dark" ? "true" : "false" }, [
+                    h("span", { class: state.theme === "dark" ? "active" : "" }, [icon("Moon", 15), "Dark"]),
+                    h("span", { class: state.theme === "light" ? "active" : "" }, [icon("Sun", 15), "Light"]),
+                  ]),
+                ]),
+                h("div", { class: "settings-row settings-presence-row" }, [
+                  h("span", {}, [h("strong", {}, "Current status"), h("small", {}, cap(status))]),
+                  presenceControl(),
+                ]),
+              ]),
+            ]),
+            h("article", { class: "settings-detail-card settings-panel-card notification-history-card" }, [
+              notificationHistoryPanel(),
+            ]),
+            h("article", { class: "settings-detail-card settings-panel-card push-settings-card" }, [
+              pushSettingsPanel(true),
+            ]),
+            h("article", { class: "settings-detail-card settings-panel-card access-request-card" }, [
+              settingsCardHead(isAdmin() ? "Access Requests" : "Request Access", isAdmin() ? "Review workspace access requests." : "Ask an admin for project or chatter access.", "ShieldCheck"),
+              accessRequestsPanel(),
+            ]),
+            h("article", { class: "settings-detail-card danger-settings-card" }, [
+              settingsCardHead("Logout", "Sign out of this device safely.", "LogOut"),
+              h("p", {}, "You will need to sign in again to access this workspace."),
+              h("button", { class: "btn btn-danger btn-block", onclick: confirmLogout }, [icon("LogOut", 16), "Logout"]),
             ]),
           ]),
-        ]),
-        h("article", { class: "settings-card notification-history-card" }, [
-          notificationHistoryPanel(),
-        ]),
-        h("article", { class: "settings-card push-settings-card" }, [
-          pushSettingsPanel(true),
-        ]),
-        h("article", { class: "settings-card access-request-card" }, [
-          settingsCardHead(isAdmin() ? "Access Requests" : "Request Access", isAdmin() ? "Review workspace access requests." : "Ask an admin for project or chatter access.", "ShieldCheck"),
-          accessRequestsPanel(),
-        ]),
-        h("article", { class: "settings-card account-settings-card" }, [
-          settingsCardHead("Account", "Your signed-in workspace profile.", "UserRound"),
-          h("div", { class: "settings-account" }, [
-            h("span", { class: `settings-avatar presence-avatar presence-${status}` }, initials(state.user?.name || "User")),
-            h("span", {}, [
-              h("strong", {}, state.user?.name || "AnoChat User"),
-              h("small", {}, roleText),
-              h("small", {}, email),
-            ]),
-          ]),
-          h("button", { class: "btn btn-soft", onclick: () => openModal("profile", state.user) }, [icon("UserRound", 16), "View profile"]),
-        ]),
-        h("article", { class: "settings-card danger-settings-card" }, [
-          settingsCardHead("Logout", "Sign out of this device safely.", "LogOut"),
-          h("p", {}, "You will need to sign in again to access this workspace."),
-          h("button", { class: "btn btn-danger", onclick: confirmLogout }, [icon("LogOut", 16), "Logout"]),
         ]),
       ]),
     ], "settings-page");
+  }
+
+  function settingsSideItem(label, active, tone) {
+    return h("span", { class: `${active ? "active " : ""}${tone === "danger" ? "danger" : ""}`.trim() }, label);
+  }
+
+  function settingsEditButton(onClick) {
+    return h("button", { type: "button", class: "settings-edit-btn", onclick: onClick }, [icon("Edit", 16), "Edit"]);
+  }
+
+  function settingsDetailHead(title, onEdit) {
+    return h("div", { class: "settings-detail-head" }, [
+      h("h2", {}, title),
+      onEdit ? settingsEditButton(onEdit) : null,
+    ]);
+  }
+
+  function settingsInfoItem(label, value) {
+    return h("span", { class: "settings-info-item" }, [
+      h("small", {}, label),
+      h("strong", {}, value || "-"),
+    ]);
   }
 
   function settingsCardHead(title, subtitle, iconName) {
