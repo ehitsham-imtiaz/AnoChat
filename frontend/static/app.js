@@ -1221,12 +1221,12 @@
             activeSection === "settings-profile" ? h("article", { class: "settings-detail-card" }, [
               settingsDetailHead("Personal Information", () => openModal("profile", state.user)),
               h("div", { class: "settings-info-grid" }, [
-                settingsInfoItem("First Name", firstName),
-                settingsInfoItem("Last Name", lastName),
-                settingsInfoItem("Email Address", email),
-                settingsInfoItem("Login", state.user?.login || email),
-                settingsInfoItem("Role", roleText),
-                settingsInfoItem("Status", cap(status)),
+                settingsInfoItem("First Name", firstName, "UserRound"),
+                settingsInfoItem("Last Name", lastName, "UserRound"),
+                settingsInfoItem("Email Address", email, "Mail"),
+                settingsInfoItem("Login", state.user?.login || email, "LockKeyhole"),
+                settingsInfoItem("Role", roleText, "ShieldCheck"),
+                settingsInfoItem("Status", cap(status), "Activity"),
               ]),
             ]) : null,
             activeSection === "settings-push" ? h("article", { class: "settings-detail-card settings-panel-card push-settings-card" }, [
@@ -1266,10 +1266,13 @@
     ]);
   }
 
-  function settingsInfoItem(label, value) {
+  function settingsInfoItem(label, value, iconName) {
     return h("span", { class: "settings-info-item" }, [
-      h("small", {}, label),
-      h("strong", {}, value || "-"),
+      iconName ? h("span", { class: "settings-info-icon", "aria-hidden": "true" }, [icon(iconName, 17)]) : null,
+      h("span", { class: "settings-info-copy" }, [
+        h("small", {}, label),
+        h("strong", {}, value || "-"),
+      ]),
     ]);
   }
 
