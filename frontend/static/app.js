@@ -78,6 +78,8 @@
       logDateFrom: "",
       logDateTo: "",
       userSearch: "",
+      userRole: "all",
+      userStatus: "all",
       chatterSearch: "",
       chatterFilter: "all",
     },
@@ -2796,11 +2798,18 @@
     const users = filteredUsers();
     return page([
       h("section", { class: "users-toolbar card" }, [
-        searchBox("Search users...", "userSearch"),
+        h("div", { class: "users-toolbar-title" }, [
+          h("h2", {}, "Users & Roles"),
+          h("p", {}, "Access control and account status"),
+        ]),
+        h("div", { class: "users-toolbar-controls" }, [
+          searchBox("Search users...", "userSearch"),
+          filterSelect("userRole", ["all", "admin", "manager", "developer", "customer"], "Role"),
+          filterSelect("userStatus", ["all", "online", "offline", "busy", "inactive"], "Status"),
+        ]),
         isAdmin() ? h("button", { class: "btn btn-primary users-create-btn", onclick: () => openModal("user") }, [icon("UserPlus"), "Create User"]) : null,
       ]),
       h("article", { class: "card users-card" }, [
-        cardHeader("Users & Roles", "Access control and account status"),
         users.length ? usersTable(users) : usersEmptyState(),
       ]),
     ]);
@@ -2808,27 +2817,33 @@
 
   function filteredUsers() {
     const q = state.filters.userSearch.toLowerCase();
+    const selectedRole = normalizeRole(state.filters.userRole || "all");
+    const selectedStatus = String(state.filters.userStatus || "all").toLowerCase();
     return state.users.filter((u) => {
       if (Number(u.id) === Number(state.user?.id)) return false;
-      return !q || [u.name, u.email, u.login, roles(u).join(" "), displayRoles(u).join(" ")].join(" ").toLowerCase().indexOf(q) >= 0;
+      const userRoles = roles(u).map(normalizeRole);
+      const status = !u.active ? "inactive" : String(u.messenger_status || "offline").toLowerCase();
+      const matchesSearch = !q || [u.name, u.email, u.login, userRoles.join(" "), displayRoles(u).join(" ")].join(" ").toLowerCase().indexOf(q) >= 0;
+      const matchesRole = selectedRole === "all" || userRoles.indexOf(selectedRole) >= 0;
+      const matchesStatus = selectedStatus === "all" || status === selectedStatus;
+      return matchesSearch && matchesRole && matchesStatus;
     });
   }
 
   function userRow(user) {
     return [
       h("div", { class: "user-person" }, [
-        h("span", { class: `avatar user-avatar presence-avatar presence-${user.messenger_status || "offline"}` }, initials(user.name)),
+        userAvatar(user, `avatar user-avatar presence-avatar presence-${user.messenger_status || "offline"}`, user.name || user.email),
         h("span", { class: "user-name-stack" }, [h("strong", {}, user.name), h("small", {}, user.login || user.email)]),
       ]),
-      h("span", { class: "user-email" }, [icon("Mail", 15), user.email]),
       h("div", { class: "badge-row" }, roles(user).map((role) => badge(role, "role"))),
       userStatusBadge(user),
       formatDate(user.created_at),
       isAdmin() ? h("div", { class: "row-actions" }, [
-        h("button", { class: "btn btn-outline action-role", onclick: () => openModal("role", user) }, [icon("Edit"), "Edit"]),
-        user.id !== state.user.id && user.active ? h("button", { class: "btn btn-danger action-danger", onclick: () => confirmAction("Deactivate user?", "The user will no longer be active.", () => disableUser(user.id)) }, [icon("Trash"), "Deactivate"]) : null,
-        user.id !== state.user.id && !user.active ? h("button", { class: "btn btn-primary", onclick: () => confirmAction("Activate user?", "This restores the user's workspace access.", () => activateUser(user.id)) }, [icon("Check"), "Activate"]) : null,
-        user.id !== state.user.id ? h("button", { class: "btn btn-danger action-danger", onclick: () => confirmAction("Delete user?", "This permanently removes the user account.", () => deleteUser(user.id)) }, [icon("Trash"), "Delete"]) : null,
+        h("button", { class: "btn btn-outline action-role", title: "Edit user", "aria-label": `Edit ${user.name || "user"}`, onclick: () => openModal("role", user) }, [icon("Pencil", 17), h("span", {}, "Edit")]),
+        user.id !== state.user.id && user.active ? h("button", { class: "btn btn-danger action-danger", title: "Deactivate user", "aria-label": `Deactivate ${user.name || "user"}`, onclick: () => confirmAction("Deactivate user?", "The user will no longer be active.", () => disableUser(user.id)) }, [icon("Ban", 17), h("span", {}, "Deactivate")]) : null,
+        user.id !== state.user.id && !user.active ? h("button", { class: "btn btn-primary", title: "Activate user", "aria-label": `Activate ${user.name || "user"}`, onclick: () => confirmAction("Activate user?", "This restores the user's workspace access.", () => activateUser(user.id)) }, [icon("Check", 17), h("span", {}, "Activate")]) : null,
+        user.id !== state.user.id ? h("button", { class: "btn btn-danger action-danger", title: "Delete user", "aria-label": `Delete ${user.name || "user"}`, onclick: () => confirmAction("Delete user?", "This permanently removes the user account.", () => deleteUser(user.id)) }, [icon("Trash2", 17), h("span", {}, "Delete")]) : null,
       ]) : "",
     ];
   }
@@ -2841,8 +2856,8 @@
 
   function usersTable(users) {
     return h("div", { class: "table-wrap users-table-wrap" }, [h("table", { class: "users-table" }, [
-      h("thead", {}, h("tr", {}, ["Name", "Email", "Role", "Status", "Created", "Actions"].map((head) => h("th", {}, head)))),
-      h("tbody", {}, users.map((user) => h("tr", {}, userRow(user).map((cell, i) => h("td", { "data-label": ["Name", "Email", "Role", "Status", "Created", "Actions"][i] }, cell))))),
+      h("thead", {}, h("tr", {}, ["User", "Role", "Status", "Created", "Actions"].map((head) => h("th", {}, head)))),
+      h("tbody", {}, users.map((user) => h("tr", {}, userRow(user).map((cell, i) => h("td", { "data-label": ["User", "Role", "Status", "Created", "Actions"][i] }, cell))))),
     ])]);
   }
 
