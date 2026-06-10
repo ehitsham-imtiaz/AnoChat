@@ -1719,7 +1719,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   grid-area: controls;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(170px, 220px) minmax(170px, 220px);
+  grid-template-columns: minmax(280px, 470px) minmax(170px, 220px) minmax(170px, 220px);
   gap: 14px;
   align-items: center;
 }
@@ -1741,6 +1741,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 45%, var(--line)), 0 0 0 4px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 .projects-toolbar .filter-select {
+  grid-template-columns: auto minmax(0, 1fr);
   min-height: 56px;
   padding: 8px 12px;
   border-color: color-mix(in srgb, var(--line) 72%, transparent);
@@ -5726,11 +5727,14 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: 0 16px 42px rgba(0, 0, 0, .22);
 }
 :root[data-theme="dark"] .projects-toolbar .search-box input,
+:root[data-theme="dark"] .users-toolbar .search-box input,
+:root[data-theme="dark"] .projects-toolbar .filter-select,
+:root[data-theme="dark"] .users-toolbar .filter-select,
 :root[data-theme="dark"] .filter-select,
 :root[data-theme="dark"] .audit-date-field input {
   color: #f8fafc;
-  border-color: #263244;
-  background: rgba(15, 23, 42, .78);
+  border-color: rgba(51, 65, 85, .78);
+  background: rgba(17, 24, 39, .90);
   box-shadow: none;
 }
 :root[data-theme="dark"] .activity-toolbar {
