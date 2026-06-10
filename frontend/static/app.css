@@ -8803,7 +8803,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   height: 100svh;
   min-height: 0;
   margin-inline: 0;
-  padding: 20px 28px;
+  padding: 16px 24px;
   overflow: hidden;
   background:
     radial-gradient(circle at 92% 8%, rgba(37, 99, 235, .12), transparent 360px),
@@ -8811,13 +8811,13 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-shell {
-  width: min(100%, 1500px);
-  height: calc(100svh - 40px);
+  width: min(100%, 1380px);
+  height: calc(100svh - 32px);
   min-height: 0;
   margin-inline: auto;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 20px;
-  padding: 22px 28px 24px;
+  gap: 16px;
+  padding: 18px 24px 20px;
   border: 1px solid rgba(148, 163, 184, .16);
   border-radius: 28px;
   background:
@@ -8827,8 +8827,8 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-topbar {
-  min-height: 74px;
-  padding: 14px 28px;
+  min-height: 62px;
+  padding: 10px 18px;
   border: 1px solid rgba(148, 163, 184, .15);
   border-radius: 22px;
   background: rgba(15, 23, 42, .66);
@@ -8836,9 +8836,9 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-search {
-  width: min(420px, 100%);
-  min-height: 54px;
-  padding: 6px 7px 6px 18px;
+  width: min(380px, 100%);
+  min-height: 48px;
+  padding: 5px 6px 5px 16px;
   border-color: rgba(148, 163, 184, .20);
   border-radius: 14px;
   background: rgba(15, 23, 42, .78);
@@ -8860,7 +8860,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-search button {
-  min-height: 42px;
+  min-height: 38px;
   border-radius: 12px;
   color: #8fb5ff;
   background: rgba(37, 99, 235, .14);
@@ -8878,9 +8878,9 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 
 .settings-mini-action,
 .settings-top-actions .presence-wrap > button {
-  width: 54px;
-  height: 54px;
-  min-height: 54px;
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
   border-color: rgba(148, 163, 184, .16);
   border-radius: 16px;
   color: #cbd5e1;
@@ -8898,12 +8898,12 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .settings-title {
   margin: 0;
   color: #f8fafc;
-  font-size: 29px;
+  font-size: 27px;
   font-weight: 850;
 }
 
 .settings-layout {
-  grid-template-columns: 330px minmax(0, 1fr);
+  grid-template-columns: 285px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -8913,28 +8913,37 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03), 0 24px 70px rgba(0, 0, 0, .22);
 }
 
+.settings-main-panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.settings-main-panel {
+  scrollbar-width: none;
+}
+
 .settings-side-menu {
-  gap: 16px;
-  padding: 26px 28px;
+  gap: 12px;
+  padding: 22px 24px;
   border-right-color: rgba(148, 163, 184, .12);
   background: linear-gradient(180deg, rgba(15, 23, 42, .18), rgba(15, 23, 42, .04));
 }
 
 .settings-side-menu button {
-  min-height: 64px;
-  gap: 18px;
-  padding: 0 26px;
+  min-height: 54px;
+  gap: 14px;
+  padding: 0 20px;
   border: 1px solid transparent;
   border-radius: 12px;
   color: #aab6ca;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 750;
   letter-spacing: 0;
 }
 
 .settings-side-menu button .icon {
-  width: 23px;
-  height: 23px;
+  width: 21px;
+  height: 21px;
   color: currentColor;
   stroke-width: 2;
 }
@@ -8952,7 +8961,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-side-menu button.danger {
-  margin-top: 14px;
+  margin-top: 10px;
   color: #fb7185;
 }
 
@@ -8962,14 +8971,14 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-main-panel {
-  gap: 22px;
-  padding: 26px 34px;
+  gap: 18px;
+  padding: 24px 28px;
   overflow: auto;
 }
 
 .settings-profile-card,
 .settings-detail-card {
-  padding: 30px 34px;
+  padding: 24px 28px;
   border-color: rgba(148, 163, 184, .14);
   border-radius: 24px;
   background:
@@ -8983,39 +8992,39 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-profile-content {
-  grid-template-columns: 76px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 18px;
 }
 
 .settings-profile-avatar {
-  width: 76px;
-  height: 76px;
+  width: 64px;
+  height: 64px;
   border: 0;
   box-shadow: 0 16px 34px rgba(0, 0, 0, .24);
 }
 
 .settings-profile-content strong {
   color: #f8fafc;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 850;
 }
 
 .settings-profile-content small {
   color: #b6c2d6;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 520;
 }
 
 .settings-profile-actions {
-  gap: 18px;
+  gap: 12px;
 }
 
 .settings-photo-btn,
 .settings-edit-btn {
-  min-height: 56px;
+  min-height: 48px;
   border-radius: 12px;
-  padding: 0 24px;
-  font-size: 16px;
+  padding: 0 20px;
+  font-size: 15px;
   font-weight: 850;
 }
 
@@ -9044,16 +9053,16 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 
 .settings-detail-head h2 {
   color: #f8fafc;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 850;
 }
 
 .settings-info-grid {
-  gap: 0 36px;
+  gap: 0 28px;
 }
 
 .settings-info-item {
-  min-height: 84px;
+  min-height: 70px;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
@@ -9063,8 +9072,8 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 
 .settings-info-icon {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(96, 165, 250, .16);
@@ -9080,29 +9089,29 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .settings-info-copy {
   min-width: 0;
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
 
 .settings-info-item small {
   color: #98a6bd;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 520;
 }
 
 .settings-info-item strong {
   color: #f8fafc;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 850;
 }
 
 .settings-panel-card .push-settings-panel,
 .settings-panel-card .access-request-panel {
-  padding: 26px 34px 34px;
+  padding: 22px 28px 28px;
 }
 
 .settings-card-head {
   grid-template-columns: 48px minmax(0, 1fr);
-  padding: 30px 34px 0;
+  padding: 24px 28px 0;
 }
 
 .settings-card-icon {
