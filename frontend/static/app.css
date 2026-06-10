@@ -7735,10 +7735,14 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
     height: auto;
     padding: 12px;
     overflow: visible;
+    display: block;
+    place-items: initial;
   }
   .chat-page .chat-shell,
   .chat-page .chat-shell.info-open {
     grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
     border-radius: 18px;
     overflow: hidden;
   }
