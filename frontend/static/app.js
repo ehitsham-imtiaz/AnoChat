@@ -1137,7 +1137,7 @@
       h("section", { class: isAdmin() ? "metric-grid dashboard-metrics" : "metric-grid dashboard-metrics compact" }, metrics),
       h("section", { class: isAdmin() ? "quick-actions" : "quick-actions compact" }, actions),
       h("section", { class: "content-grid two dashboard-content" }, [
-        h("article", { class: "card dashboard-panel" }, [cardHeader("Recent Projects", "Latest project records", "Projects", () => switchTab("projects")), projectCards(filteredProjects().slice(0, 4), true)]),
+        h("article", { class: "card dashboard-panel" }, [cardHeader("Recent Projects", "Latest project records", ["View all", icon("ChevronRight", 18)], () => switchTab("projects")), projectCards(filteredProjects().slice(0, 4), true)]),
         h("article", { class: "card dashboard-panel" }, [cardHeader("Active Chatter", "Current conversations", "Chatter", () => switchTab("chatters")), chatterList(5, true)]),
       ]),
       isAdmin() ? h("article", { class: "card dashboard-panel activity-panel" }, [cardHeader("Recent Activity", "Latest audit events"), activityList(recent)]) : null,
