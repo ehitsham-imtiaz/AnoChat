@@ -9037,3 +9037,73 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   }
 }
 
+/* Chatter attachment alignment polish */
+:root[data-theme="dark"] .chat-page .conversation.active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, .30), rgba(30, 64, 175, .18));
+  box-shadow: inset 4px 0 0 #2f80ff, 0 14px 34px rgba(37, 99, 235, .16);
+}
+
+:root[data-theme="dark"] .chat-page .conversation.active .conversation-avatar {
+  box-shadow: 0 0 0 3px rgba(47, 128, 255, .20);
+}
+
+.chat-page .own .bubble.attachment-bubble:not(.voice-bubble) {
+  display: grid;
+  justify-items: stretch;
+  gap: 8px;
+  width: min(440px, 72vw);
+  max-width: min(440px, 72vw);
+  padding: 10px;
+}
+
+.chat-page .bubble.attachment-bubble:not(.voice-bubble) .attachment-strip,
+.chat-page .own .bubble.attachment-bubble:not(.voice-bubble) .attachment-strip,
+.chat-page .bubble.attachment-bubble:not(.voice-bubble) .attachment-strip:has(.message-file-card:only-child) {
+  width: 100%;
+  max-width: none;
+}
+
+.chat-page .bubble.attachment-bubble:not(.voice-bubble) .message-file-card,
+.chat-page .own .bubble.attachment-bubble:not(.voice-bubble) .message-file-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chat-page .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)) {
+  width: fit-content;
+  max-width: min(420px, 72vw);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chat-page .own .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.chat-page .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)) .message-file-card {
+  width: min(420px, 72vw);
+}
+
+:root[data-theme="dark"] .chat-page .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)),
+:root[data-theme="dark"] .chat-page .own .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)) {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .chat-page .own .bubble.attachment-bubble:not(.voice-bubble) .message-file-card {
+  border-color: rgba(96, 165, 250, .30);
+  background: #132d4a;
+}
+
+:root[data-theme="dark"] .chat-page .own .bubble.attachment-bubble:not(.voice-bubble):has(.message-file-card:only-child):not(:has(.attachment-caption)) .message-file-card {
+  background: linear-gradient(135deg, rgba(30, 64, 175, .88), rgba(14, 116, 144, .50));
+  border-color: rgba(96, 165, 250, .38);
+}
+
+:root[data-theme="dark"] .chat-page .own .bubble.attachment-bubble:not(.voice-bubble) .message-file-download {
+  color: #60a5fa;
+}
+
