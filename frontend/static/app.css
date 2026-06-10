@@ -9968,6 +9968,10 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 
 .chat-page .conversation-row-meta {
   font-size: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: start;
+  gap: 6px;
 }
 
 .chat-page .conversation-preview-row small {
@@ -9977,6 +9981,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 .chat-page .conversation-unread-badge {
   min-width: 20px;
   height: 20px;
+  margin-top: 0;
   background: var(--chat-active-accent);
   box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
 }
