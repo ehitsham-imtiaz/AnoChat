@@ -10300,12 +10300,21 @@ svg {
 .modal {
   max-width: calc(100vw - 28px);
   max-height: calc(100svh - 28px);
-  overflow: auto;
+  overflow: visible;
 }
 
 .modal-backdrop {
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.modal:has(.custom-select.open),
+.modal:has(.custom-select.open) .project-modal-form,
+.modal:has(.custom-select.open) .user-modal-form,
+.modal:has(.custom-select.open) .role-modal-form,
+.modal:has(.custom-select.open) .chatter-modal-form,
+.modal:has(.custom-select.open) .input-wrap {
+  overflow: visible;
 }
 
 .table-wrap,
@@ -10541,8 +10550,13 @@ svg {
     width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
     max-height: calc(100svh - 20px);
+    overflow: auto;
     padding: 14px;
     border-radius: 20px;
+  }
+
+  .modal:has(.custom-select.open) {
+    overflow: visible;
   }
 
   .modal-head {
@@ -10566,6 +10580,14 @@ svg {
     max-height: calc(100svh - 130px);
     overflow: auto;
     padding-right: 2px;
+  }
+
+  .modal:has(.custom-select.open) .project-modal-form,
+  .modal:has(.custom-select.open) .user-modal-form,
+  .modal:has(.custom-select.open) .role-modal-form,
+  .modal:has(.custom-select.open) .chatter-modal-form,
+  .modal:has(.custom-select.open) .input-wrap {
+    overflow: visible;
   }
 
   .users-table-footer {
