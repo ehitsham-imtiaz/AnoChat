@@ -1709,6 +1709,9 @@
 
   function messageBubble(message) {
     const own = sameId(message.sender_id, state.user.id);
+    const active = state.chatters.find((item) => sameId(item.id, state.activeChatter));
+    const memberCount = Array.isArray(active?.members) ? active.members.length : 0;
+    const showAuthorName = !memberCount || memberCount > 2;
     const editable = canEditMessage(message);
     const deletedByCurrentUser = Number(message.deleted_by_id) === Number(state.user?.id);
     const hasAttachments = !!(message.attachments && message.attachments.length);
@@ -1724,9 +1727,9 @@
     return h("div", { class: own ? "message-row own" : "message-row", id: `message-${message.id}` }, [
       !own ? userAvatar(author, "message-avatar", authorName) : null,
       h("div", { class: "message-stack" }, [
-        h("div", { class: `${message.is_deleted ? "bubble deleted-message" : "bubble"}${hasAttachments ? " attachment-bubble" : ""}${hasAudio ? " voice-bubble" : ""}` }, [
+        h("div", { class: `${message.is_deleted ? "bubble deleted-message" : "bubble"}${hasAttachments ? " attachment-bubble" : ""}${hasAudio ? " voice-bubble" : ""}${showAuthorName ? "" : " no-author"}` }, [
           h("div", { class: "bubble-meta" }, [
-            h("strong", {}, authorName),
+            showAuthorName ? h("strong", {}, authorName) : null,
             h("span", { class: "message-actions" }, [
               messageMenu(message, editable, own),
             ]),
