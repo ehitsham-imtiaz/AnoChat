@@ -5741,6 +5741,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 }
 :root[data-theme="dark"] .projects-toolbar .search-box input,
 :root[data-theme="dark"] .users-toolbar .search-box input,
+:root[data-theme="dark"] .activity-toolbar .search-box input,
 :root[data-theme="dark"] .projects-toolbar .filter-select,
 :root[data-theme="dark"] .users-toolbar .filter-select,
 :root[data-theme="dark"] .filter-select,
@@ -5756,6 +5757,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   box-shadow: 0 16px 42px rgba(0, 0, 0, .22);
 }
 :root[data-theme="dark"] .projects-toolbar .search-box input:focus,
+:root[data-theme="dark"] .activity-toolbar .search-box input:focus,
 :root[data-theme="dark"] .filter-select:focus-within,
 :root[data-theme="dark"] .audit-date-field input:focus {
   background: #111827;
