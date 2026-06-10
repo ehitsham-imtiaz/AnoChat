@@ -144,6 +144,7 @@
       Ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
       Bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
       BellOff: '<path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.99 5.99 0 0 0 6 8c0 7-3 7-3 9h14"/><path d="m2 2 20 20"/>',
+      AlertTriangle: '<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
       Boxes: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
       BriefcaseBusiness: '<path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 13.5V8a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v5.5"/><path d="M2 13.5V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4.5"/><path d="M2 13.5c6.5 3 13.5 3 20 0"/>',
       Calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
@@ -1170,17 +1171,15 @@
     return page([
       h("section", { class: "settings-shell" }, [
         h("div", { class: "settings-topbar" }, [
-          h("label", { class: "settings-search" }, [
-            icon("Search", 18),
-            h("input", { type: "search", placeholder: "Search Something...", "aria-label": "Search settings" }),
-            h("button", { type: "button", onclick: (event) => event.preventDefault() }, "Search"),
+          h("div", { class: "settings-top-title" }, [
+            h("h1", {}, "Account Settings"),
+            h("p", {}, "Manage profile, alerts, access, and workspace preferences."),
           ]),
           h("div", { class: "settings-top-actions" }, [
             presenceControl(),
             h("button", { type: "button", class: "settings-mini-action", onclick: toggleTheme, title: "Toggle theme", "aria-label": "Toggle theme" }, [icon(state.theme === "dark" ? "Sun" : "Moon", 17)]),
           ]),
         ]),
-        h("h1", { class: "settings-title" }, "Account Settings"),
         h("div", { class: "settings-layout" }, [
           h("aside", { class: "settings-side-menu", "aria-label": "Settings sections" }, [
             settingsSideItem("My Profile", "UserRound", activeSection === "settings-profile", null, () => jumpToSettingsSection("settings-profile")),
@@ -3060,11 +3059,9 @@
       h("div", { class: "account-settings-head" }, [
         h("span", {}, [icon("Bell", 16)]),
         h("div", {}, [h("strong", {}, "Push notifications"), h("small", {}, pushStatusText(supported, configured, enabled))]),
-      ]),
-      h("div", { class: "push-toggle-row" }, [
         h("button", {
           type: "button",
-          class: enabled ? "btn btn-outline" : "btn btn-primary",
+          class: enabled ? "btn btn-outline push-header-btn" : "btn btn-primary push-header-btn",
           disabled: state.pushBusy || !supported || !configured,
           onclick: enabled ? disablePushNotifications : enablePushNotifications,
         }, [icon(enabled ? "BellOff" : "Bell"), buttonText]),
