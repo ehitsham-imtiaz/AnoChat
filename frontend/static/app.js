@@ -3264,14 +3264,18 @@
   }
 
   function projectForm(project) {
+    const projectMemberIds = (project?.members || [])
+      .filter((user) => !isCustomerUser(user) && !sameId(user.id, state.user?.id))
+      .map((user) => user.id);
+    const projectReadOnlyIds = (project?.read_only_member_ids || []).filter((id) => !sameId(id, state.user?.id));
     return h("form", { class: "form-grid project-modal-form", onsubmit: (event) => saveProject(event, project) }, [
       h("label", { class: "field form-span" }, [h("span", {}, "Project name"), inputWrap("FolderKanban", h("input", { name: "name", value: project?.name || "", placeholder: "Enter project name", required: true }))]),
       field("Status", inputWrap("Activity", select("status", ["active", "completed"], project?.status || "active"), h("span", { class: "status-dot active" }))),
       field("Priority", inputWrap("ChevronsUpDown", select("priority", ["low", "normal", "high", "urgent"], project?.priority || "normal"))),
       field("Deadline", inputWrap("Calendar", h("input", { type: "date", name: "deadline", value: project?.deadline || "", placeholder: "mm/dd/yyyy" }))),
       field("Customer", inputWrap("Users", selectCustomersMulti("customer_ids", "Add customer", project?.customer_id ? [project.customer_id] : []))),
-      field("Add member", inputWrap("UserPlus", selectUsersMulti("member_ids", "Add member", project?.members?.filter((user) => !isCustomerUser(user))?.map((user) => user.id) || [], { excludeCustomers: true }))),
-      field("Read-only members", inputWrap("Eye", selectUsersMulti("read_only_member_ids", "Select read-only users", project?.read_only_member_ids || [], { excludeCustomers: true }))),
+      field("Add member", inputWrap("UserPlus", selectUsersMulti("member_ids", "Add member", projectMemberIds, { excludeCustomers: true, excludeCurrentUser: true }))),
+      field("Read-only members", inputWrap("Eye", selectUsersMulti("read_only_member_ids", "Select read-only users", projectReadOnlyIds, { excludeCustomers: true, excludeCurrentUser: true }))),
       h("div", { class: "modal-actions form-span project-modal-footer" }, [
         h("button", { type: "button", class: "btn btn-soft", onclick: closeModal }, "Cancel"),
         h("button", { class: "btn btn-primary project-submit-btn" }, [project ? "Save Project" : "Create Project", icon("ChevronRight", 16)]),
@@ -3330,8 +3334,8 @@
     event.preventDefault();
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
-    const memberIds = formData.getAll("member_ids").filter(Boolean).map(Number);
-    const readOnlyMemberIds = formData.getAll("read_only_member_ids").filter(Boolean).map(Number);
+    const memberIds = formData.getAll("member_ids").filter(Boolean).map(Number).filter((id) => !sameId(id, state.user?.id));
+    const readOnlyMemberIds = formData.getAll("read_only_member_ids").filter(Boolean).map(Number).filter((id) => !sameId(id, state.user?.id));
     const customerIds = formData.getAll("customer_ids").filter(Boolean).map(Number);
     const allMemberIds = Array.from(new Set([state.user.id].concat(memberIds, customerIds, readOnlyMemberIds)));
     await run(async () => {
@@ -4021,7 +4025,11 @@
     });
   }
   function selectUsersMulti(name, label, selected, options) {
-    const selectableUsers = options?.excludeCustomers ? state.users.filter((u) => !isCustomerUser(u)) : state.users;
+    const selectableUsers = state.users.filter((u) => {
+      if (options?.excludeCustomers && isCustomerUser(u)) return false;
+      if (options?.excludeCurrentUser && sameId(u.id, state.user?.id)) return false;
+      return true;
+    });
     return multiDropdown({
       name,
       placeholder: label,
