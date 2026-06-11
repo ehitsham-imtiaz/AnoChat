@@ -133,6 +133,7 @@
       if (key === "class") el.className = value;
       else if (key === "html") el.innerHTML = value;
       else if (key.startsWith("on")) el.addEventListener(key.slice(2).toLowerCase(), value);
+      else if (key === "value" && ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) el.value = value ?? "";
       else if (value !== null && value !== undefined && value !== false) el.setAttribute(key, value === true ? "" : value);
     });
     (Array.isArray(children) ? children : [children]).filter((child) => child !== null && child !== undefined).forEach((child) => {

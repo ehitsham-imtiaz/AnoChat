@@ -5708,12 +5708,12 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
   color: #a8b3c7;
   border-color: #334155;
 }
-.access-request-form textarea {
+:root[data-theme="dark"] .access-request-form textarea {
   color: #f8fafc;
   border-color: #334155;
   background: rgba(15, 23, 42, .72);
 }
-.access-request-form textarea:focus {
+:root[data-theme="dark"] .access-request-form textarea:focus {
   border-color: #60a5fa;
   background: #111827;
   box-shadow: 0 0 0 4px rgba(96,165,250,.16);
@@ -9408,6 +9408,7 @@ th { color: var(--muted); font-weight: 800; background: var(--surface-2); }
 :root[data-theme="light"][data-tab="settings"] .access-request-form textarea {
   border-color: rgba(203, 213, 225, .74);
   background: rgba(248, 251, 255, .84);
+  color: #0f172a;
 }
 
 @media (max-width: 900px) {
