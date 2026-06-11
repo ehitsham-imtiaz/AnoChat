@@ -8,7 +8,8 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.access_requests.routes import approve_access_request, create_access_request, reject_access_request
+from app.access_requests.routes import access_request_options, approve_access_request, create_access_request, reject_access_request
+from app.common import set_project_members
 from app.database import Base
 from app.models import Chatter, Project, Role, User
 from app.roles.permissions import can_access_project
@@ -99,3 +100,16 @@ def test_rejected_access_request_does_not_grant_project_access(db):
     db.refresh(project)
     assert rejected.status == "rejected"
     assert can_access_project(requester, project) is False
+
+
+def test_access_request_options_hide_unassigned_projects_for_non_admin(db):
+    requester = add_user(db, "Developer", "dev@example.com")
+    assigned = add_project(db, "Assigned Read Only")
+    unassigned = add_project(db, "Unassigned")
+    set_project_members(db, assigned, [requester.id], [requester.id])
+    db.commit()
+
+    options = access_request_options(db=db, current_user=requester)
+
+    assert [project.name for project in options.projects] == ["Assigned Read Only"]
+    assert unassigned.name not in [project.name for project in options.projects]

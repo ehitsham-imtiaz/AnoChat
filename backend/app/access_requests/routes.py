@@ -84,13 +84,15 @@ def access_request_options(db: Session = Depends(get_db), current_user: User = D
             project
             for project in projects
             if project.id not in pending_project_ids
-            and (not can_access_project(current_user, project) or project_read_only(db, current_user, project))
+            and can_access_project(current_user, project)
+            and project_read_only(db, current_user, project)
         ]
         chatters = [
             chatter
             for chatter in chatters
             if chatter.id not in pending_chatter_ids
-            and (not can_access_chatter(current_user, chatter) or chatter_read_only(db, current_user, chatter))
+            and can_access_chatter(current_user, chatter)
+            and chatter_read_only(db, current_user, chatter)
         ]
     return AccessRequestOptionsOut(
         projects=[AccessRequestOption(id=project.id, name=project.name) for project in projects],
