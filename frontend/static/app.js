@@ -10,6 +10,7 @@
     { key: "settings", label: "Settings", icon: "Settings2" },
   ];
   const DEFAULT_THEME = "light";
+  const THEME_PREFERENCE_VERSION = "v2";
 
   function normalizeTheme(theme) {
     return theme === "dark" ? "dark" : DEFAULT_THEME;
@@ -17,7 +18,7 @@
 
   function userThemeKey(user) {
     const userId = user?.id || user?.email || user?.login;
-    return userId ? `anochat_theme_${userId}` : "anochat_theme";
+    return userId ? `anochat_theme_${THEME_PREFERENCE_VERSION}_${userId}` : `anochat_theme_${THEME_PREFERENCE_VERSION}`;
   }
 
   function storedThemeForUser(user) {
@@ -38,7 +39,7 @@
 
   const state = {
     tab: localStorage.getItem("anochat_tab") || "dashboard",
-    theme: normalizeTheme(localStorage.getItem("anochat_theme")),
+    theme: DEFAULT_THEME,
     sidebarCollapsed: localStorage.getItem("anochat_sidebar") === "collapsed",
     mobileSidebarOpen: false,
     bootstrapping: !!apiClient.token(),
