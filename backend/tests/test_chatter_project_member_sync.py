@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.chatters.routes import create_chatter, update_chatter
+from app.chatters.routes import create_chatter, list_chatters, update_chatter
 from app.database import Base
 from app.models import Chatter, Project, Role, User
 from app.projects.routes import list_projects
@@ -83,6 +83,50 @@ def test_chatter_update_syncs_new_members_to_linked_project(db):
     db.refresh(project)
     project_member_ids = {user.id for user in project.members}
     assert {admin.id, first_member.id, added_member.id}.issubset(project_member_ids)
+
+
+def test_chatter_update_removes_members_from_linked_project(db):
+    admin = add_user(db, "Admin", "admin@example.com", "admin")
+    kept_member = add_user(db, "Kept", "kept@example.com")
+    removed_member = add_user(db, "Removed", "removed@example.com")
+    project = add_project(db)
+    chatter = Chatter(name="Project chat", project_id=project.id, created_by_id=admin.id)
+    db.add(chatter)
+    db.flush()
+    chatter.members = [admin, kept_member, removed_member]
+    project.members = [admin, kept_member, removed_member]
+    db.commit()
+
+    update_chatter(
+        chatter.id,
+        ChatterUpdate(member_ids=[admin.id, kept_member.id]),
+        db=db,
+        current_user=admin,
+    )
+
+    db.refresh(project)
+    project_member_ids = {user.id for user in project.members}
+    assert project_member_ids == {admin.id, kept_member.id}
+    assert list_projects(db=db, current_user=removed_member) == []
+
+
+def test_chatter_list_repairs_stale_project_members_before_visibility_filter(db):
+    admin = add_user(db, "Admin", "admin@example.com", "admin")
+    kept_member = add_user(db, "Kept", "kept@example.com")
+    removed_member = add_user(db, "Removed", "removed@example.com")
+    project = add_project(db)
+    chatter = Chatter(name="Project chat", project_id=project.id, created_by_id=admin.id)
+    db.add(chatter)
+    db.flush()
+    chatter.members = [admin, kept_member]
+    project.members = [admin, kept_member, removed_member]
+    db.commit()
+
+    visible_chatters = list_chatters(db=db, current_user=removed_member)
+
+    db.refresh(project)
+    assert visible_chatters == []
+    assert removed_member.id not in {user.id for user in project.members}
 
 
 def test_project_list_repairs_chatter_only_members_before_visibility_filter(db):

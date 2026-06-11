@@ -86,8 +86,8 @@ def sync_project_members_from_linked_chatters(db: Session, project: Project) -> 
 
     current_rows = db.execute(project_members.select().where(project_members.c.project_id == project.id)).all()
     current_state = {row.user_id: bool(row.is_read_only) for row in current_rows}
-    normal_ids = {user_id for user_id, is_read_only in current_state.items() if not is_read_only}
-    read_only_ids = {user_id for user_id, is_read_only in current_state.items() if is_read_only}
+    normal_ids: set[int] = set()
+    read_only_ids: set[int] = set()
     if project.manager_id:
         normal_ids.add(project.manager_id)
     if project.customer_id:
