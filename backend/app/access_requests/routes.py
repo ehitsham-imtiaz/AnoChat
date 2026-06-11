@@ -74,15 +74,23 @@ def access_request_options(db: Session = Depends(get_db), current_user: User = D
     projects = db.query(Project).order_by(Project.name.asc()).all()
     chatters = db.query(Chatter).filter(Chatter.active.is_(True)).order_by(Chatter.name.asc()).all()
     if not is_admin(current_user):
+        pending_requests = db.query(AccessRequest.project_id, AccessRequest.chatter_id).filter(
+            AccessRequest.requester_id == current_user.id,
+            AccessRequest.status == PENDING,
+        ).all()
+        pending_project_ids = {row.project_id for row in pending_requests if row.project_id}
+        pending_chatter_ids = {row.chatter_id for row in pending_requests if row.chatter_id}
         projects = [
             project
             for project in projects
-            if not can_access_project(current_user, project) or project_read_only(db, current_user, project)
+            if project.id not in pending_project_ids
+            and (not can_access_project(current_user, project) or project_read_only(db, current_user, project))
         ]
         chatters = [
             chatter
             for chatter in chatters
-            if not can_access_chatter(current_user, chatter) or chatter_read_only(db, current_user, chatter)
+            if chatter.id not in pending_chatter_ids
+            and (not can_access_chatter(current_user, chatter) or chatter_read_only(db, current_user, chatter))
         ]
     return AccessRequestOptionsOut(
         projects=[AccessRequestOption(id=project.id, name=project.name) for project in projects],

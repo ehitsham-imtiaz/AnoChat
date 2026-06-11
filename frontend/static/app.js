@@ -28,6 +28,7 @@
     accessRequests: [],
     accessRequestOptions: { projects: [], chatters: [] },
     accessRequestResourceType: "project",
+    accessRequestDraft: { resourceType: "project", resourceId: "", message: "" },
     settingsSection: "settings-profile",
     notificationsOpen: false,
     pushConfig: null,
@@ -768,7 +769,7 @@
       clearActiveChatter();
       revokeAllAvatarPreviews();
       Object.assign(state, {
-        user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, files: [], typingUsers: [],
+        user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, accessRequestDraft: { resourceType: "project", resourceId: "", message: "" }, files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
         activityLogs: [], projectActivity: {}, projectActivityLoading: {}, stats: null, activeChatter: null, pendingAttachment: null, pendingAttachmentPreviewUrl: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
         audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
@@ -991,7 +992,7 @@
       resetChatterAudioState();
       revokeAllAvatarPreviews();
       Object.assign(state, {
-        user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, files: [], typingUsers: [],
+        user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, accessRequestDraft: { resourceType: "project", resourceId: "", message: "" }, files: [], typingUsers: [],
         pushConfig: null, notificationPreferences: null, pushBusy: false,
         activityLogs: [], projectActivity: {}, projectActivityLoading: {}, stats: null, activeChatter: null, pendingAttachment: null, pendingAttachmentPreviewUrl: null, pendingVoiceDuration: null, pendingVoicePreviewUrl: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
         audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
@@ -2045,24 +2046,43 @@
   }
 
   function requesterAccessPanel() {
-    const type = state.accessRequestResourceType || "project";
+    const draft = state.accessRequestDraft || { resourceType: "project", resourceId: "", message: "" };
+    const type = draft.resourceType || state.accessRequestResourceType || "project";
     const options = type === "chatter" ? (state.accessRequestOptions.chatters || []) : (state.accessRequestOptions.projects || []);
+    const resourceId = options.some((item) => String(item.id) === String(draft.resourceId)) ? String(draft.resourceId) : "";
     return h("div", { class: "access-request-panel" }, [
       h("form", { class: "access-request-form", onsubmit: createAccessRequest }, [
         field("Access type", inputWrap("ChevronsUpDown", dropdown({
           name: "resource_type",
           value: type,
           items: [{ value: "project", label: "Project" }, { value: "chatter", label: "Chatter" }],
-          onChange: (value) => { state.accessRequestResourceType = value || "project"; render(); },
+          onChange: (value) => {
+            const resourceType = value || "project";
+            state.accessRequestResourceType = resourceType;
+            state.accessRequestDraft = { ...draft, resourceType, resourceId: "" };
+            render();
+          },
         }))),
         field(type === "chatter" ? "Chatter" : "Project", inputWrap(type === "chatter" ? "MessagesSquare" : "FolderKanban", dropdown({
           name: "resource_id",
-          value: "",
+          value: resourceId,
           items: [{ value: "", label: options.length ? "Choose one" : "No available items" }].concat(options.map((item) => ({ value: item.id, label: item.name }))),
+          onChange: (value) => {
+            state.accessRequestDraft = { ...(state.accessRequestDraft || draft), resourceType: type, resourceId: value || "" };
+            render();
+          },
         }))),
         h("label", { class: "field form-span" }, [
           h("span", {}, "Note"),
-          h("textarea", { name: "message", rows: "3", placeholder: "Tell the admin why you need access" }),
+          h("textarea", {
+            name: "message",
+            rows: "3",
+            placeholder: "Tell the admin why you need access",
+            value: draft.message || "",
+            oninput: (event) => {
+              state.accessRequestDraft = { ...(state.accessRequestDraft || draft), resourceType: type, message: event.target.value };
+            },
+          }),
         ]),
         h("button", { type: "submit", class: "btn btn-primary form-span", disabled: !options.length }, [icon("Send", 16), "Send request"]),
       ]),
@@ -3828,8 +3848,9 @@
   async function createAccessRequest(event) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.target).entries());
-    const resourceType = String(data.resource_type || state.accessRequestResourceType || "project").toLowerCase();
-    const resourceId = Number(data.resource_id || 0);
+    const draft = state.accessRequestDraft || {};
+    const resourceType = String(data.resource_type || draft.resourceType || state.accessRequestResourceType || "project").toLowerCase();
+    const resourceId = Number(data.resource_id || draft.resourceId || 0);
     if (!resourceId) {
       toast(`Choose a ${resourceType} before sending the request.`, "error");
       render();
@@ -3840,8 +3861,10 @@
         resource_type: resourceType,
         project_id: resourceType === "project" ? resourceId : null,
         chatter_id: resourceType === "chatter" ? resourceId : null,
-        message: String(data.message || "").trim() || null,
+        message: String(data.message ?? draft.message ?? "").trim() || null,
       });
+      state.accessRequestResourceType = resourceType;
+      state.accessRequestDraft = { resourceType, resourceId: "", message: "" };
       await loadAccessRequests();
     }, "Access request sent.");
   }
@@ -4269,7 +4292,7 @@
     stopMessageSync();
     resetChatterAudioState();
     Object.assign(state, {
-      user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, files: [], typingUsers: [],
+      user: null, users: [], projects: [], chatters: [], messages: [], notifications: [], notificationHistory: [], accessRequests: [], accessRequestOptions: { projects: [], chatters: [] }, accessRequestDraft: { resourceType: "project", resourceId: "", message: "" }, files: [], typingUsers: [],
       activityLogs: [], projectActivity: {}, projectActivityLoading: {}, stats: null, activeChatter: null, pendingAttachment: null, pendingAttachmentPreviewUrl: null, pendingVoiceDuration: null, replyTo: null, editingMessage: null, editingBody: "", modal: null,
       audioState: {}, audioLoadErrors: {}, pendingAudioRender: false,
       chatInfoExpanded: { members: false, images: false, documents: false },
