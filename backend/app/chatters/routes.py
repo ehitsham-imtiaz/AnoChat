@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.activity_logs.service import log_activity
 from app.auth.service import get_current_user
-from app.common import get_or_404, read_only_chatter_member_ids, set_chatter_members
+from app.common import get_or_404, read_only_chatter_member_ids, set_chatter_members, sync_project_members_from_chatter
 from app.database import get_db
 from app.models import Chatter, Message, TypingState, User
 from app.messages.presenter import message_out
@@ -60,6 +60,7 @@ def create_chatter(payload: ChatterCreate, db: Session = Depends(get_db), curren
     db.add(chatter)
     db.flush()
     set_chatter_members(db, chatter, member_ids, read_only_member_ids)
+    sync_project_members_from_chatter(db, chatter, member_ids, read_only_member_ids)
     create_notification(db, current_user.id, "Chatter created", f"{chatter.name} is ready for conversations.")
     log_activity(db, "chatter_created", f"{current_user.name} created chatter {chatter.name}.", current_user.id, project_id=chatter.project_id, chatter_id=chatter.id)
     db.commit()
@@ -86,12 +87,15 @@ def update_chatter(chatter_id: int, payload: ChatterUpdate, db: Session = Depend
     for key, value in data.items():
         setattr(chatter, key, value)
     if member_ids is not None or read_only_member_ids is not None:
+        next_member_ids = member_ids if member_ids is not None else [member.id for member in chatter.members]
+        next_read_only_member_ids = read_only_member_ids if read_only_member_ids is not None else read_only_chatter_member_ids(db, chatter.id)
         set_chatter_members(
             db,
             chatter,
-            member_ids if member_ids is not None else [member.id for member in chatter.members],
-            read_only_member_ids if read_only_member_ids is not None else read_only_chatter_member_ids(db, chatter.id),
+            next_member_ids,
+            next_read_only_member_ids,
         )
+        sync_project_members_from_chatter(db, chatter, next_member_ids, next_read_only_member_ids)
     log_activity(db, "chatter_updated", f"{current_user.name} updated chatter {chatter.name}.", current_user.id, project_id=chatter.project_id, chatter_id=chatter.id)
     db.commit()
     db.refresh(chatter)

@@ -57,6 +57,21 @@ def set_chatter_members(db: Session, chatter: Chatter, ids: list[int], read_only
     db.expire(chatter, ["members"])
 
 
+def sync_project_members_from_chatter(db: Session, chatter: Chatter, member_ids: list[int], read_only_member_ids: list[int] | None = None) -> None:
+    if not chatter.project_id:
+        return
+    project = db.get(Project, chatter.project_id)
+    if not project:
+        return
+    normal_chatter_ids = set(normalized_ids(member_ids))
+    read_only_chatter_ids = set(normalized_ids(read_only_member_ids))
+    project_read_only_ids = set(read_only_project_member_ids(db, project.id))
+    project_member_ids = {member.id for member in project.members}
+    merged_member_ids = project_member_ids | normal_chatter_ids | read_only_chatter_ids
+    merged_read_only_ids = (project_read_only_ids | read_only_chatter_ids) - normal_chatter_ids
+    set_project_members(db, project, list(merged_member_ids), list(merged_read_only_ids))
+
+
 def read_only_project_member_ids(db: Session, project_id: int) -> list[int]:
     return [
         row[0]

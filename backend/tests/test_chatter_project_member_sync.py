@@ -1,0 +1,84 @@
+import sys
+from pathlib import Path
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.chatters.routes import create_chatter, update_chatter
+from app.database import Base
+from app.models import Chatter, Project, Role, User
+from app.schemas import ChatterCreate, ChatterUpdate
+
+
+@pytest.fixture()
+def db():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+
+
+def add_user(db, name, email, role_name="developer"):
+    role = db.query(Role).filter(Role.name == role_name).first()
+    if not role:
+        role = Role(name=role_name, description=f"{role_name.title()} role")
+        db.add(role)
+        db.flush()
+    user = User(name=name, login=email, email=email, hashed_password="x", roles=[role])
+    db.add(user)
+    db.flush()
+    return user
+
+
+def add_project(db, name="Linked Project"):
+    project = Project(name=name)
+    db.add(project)
+    db.flush()
+    return project
+
+
+def test_chatter_create_syncs_members_to_linked_project(db):
+    admin = add_user(db, "Admin", "admin@example.com", "admin")
+    member = add_user(db, "Member", "member@example.com")
+    project = add_project(db)
+    db.commit()
+
+    create_chatter(
+        ChatterCreate(name="Project chat", project_id=project.id, member_ids=[member.id]),
+        db=db,
+        current_user=admin,
+    )
+
+    db.refresh(project)
+    project_member_ids = {user.id for user in project.members}
+    assert admin.id in project_member_ids
+    assert member.id in project_member_ids
+
+
+def test_chatter_update_syncs_new_members_to_linked_project(db):
+    admin = add_user(db, "Admin", "admin@example.com", "admin")
+    first_member = add_user(db, "First", "first@example.com")
+    added_member = add_user(db, "Added", "added@example.com")
+    project = add_project(db)
+    chatter = Chatter(name="Project chat", project_id=project.id, created_by_id=admin.id)
+    db.add(chatter)
+    db.commit()
+
+    update_chatter(
+        chatter.id,
+        ChatterUpdate(member_ids=[admin.id, first_member.id, added_member.id]),
+        db=db,
+        current_user=admin,
+    )
+
+    db.refresh(project)
+    project_member_ids = {user.id for user in project.members}
+    assert {admin.id, first_member.id, added_member.id}.issubset(project_member_ids)

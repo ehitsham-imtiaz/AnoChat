@@ -3438,7 +3438,7 @@
       if (chatter) await apiClient.put(`/api/chatters/${chatter.id}`, payload);
       else await apiClient.post("/api/chatters", payload);
       closeModal();
-      await loadChatters();
+      await Promise.all([loadProjects(), loadChatters()]);
     }, chatter ? "Chatter updated." : "Chatter created.");
   }
 
