@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.activity_logs.service import log_activity
@@ -61,7 +61,34 @@ def allowed_content_type(filename: str | None, content_type: str) -> str | None:
 def list_attachments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     query = db.query(Attachment).order_by(Attachment.created_at.desc())
     if not is_admin(current_user):
-        query = query.filter(Attachment.uploaded_by_id == current_user.id, Attachment.is_deleted.is_(False))
+        # Non-admin users can only see attachments they uploaded or can access through projects/chatters
+        accessible_project_ids = set()
+        accessible_chatter_ids = set()
+        
+        # Get all projects this user has access to
+        user_projects = db.query(Project).filter(
+            (Project.manager_id == current_user.id) |
+            (Project.customer_id == current_user.id) |
+            (Project.members.any(User.id == current_user.id))
+        ).all()
+        accessible_project_ids = {p.id for p in user_projects}
+        
+        # Get all chatters this user has access to
+        user_chatters = db.query(Chatter).filter(
+            (Chatter.created_by_id == current_user.id) |
+            (Chatter.members.any(User.id == current_user.id))
+        ).all()
+        accessible_chatter_ids = {c.id for c in user_chatters}
+        
+        # Filter attachments by: uploaded by user OR in accessible projects/chatters
+        query = query.filter(
+            or_(
+                Attachment.uploaded_by_id == current_user.id,
+                Attachment.project_id.in_(accessible_project_ids) if accessible_project_ids else False,
+                Attachment.chatter_id.in_(accessible_chatter_ids) if accessible_chatter_ids else False,
+            ),
+            Attachment.is_deleted.is_(False)
+        )
     return query.limit(300).all()
 
 
