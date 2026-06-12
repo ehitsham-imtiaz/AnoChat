@@ -105,6 +105,7 @@ async def upload_attachment(
     current_user: User = Depends(get_current_user),
 ):
     require_write_access(current_user)
+    chatter = None
     if chatter_id:
         chatter = get_or_404(db, Chatter, chatter_id)
         assert_chatter_access(current_user, chatter)
@@ -113,6 +114,9 @@ async def upload_attachment(
         project = get_or_404(db, Project, project_id)
         assert_project_access(current_user, project)
         require_project_write_access(db, current_user, project)
+    # Auto-set project_id from chatter if chatter is linked to a project and project_id not explicitly set
+    if not project_id and chatter and chatter.project_id:
+        project_id = chatter.project_id
     content = await file.read()
     if len(content) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="File too large")
