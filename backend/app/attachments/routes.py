@@ -61,7 +61,7 @@ def allowed_content_type(filename: str | None, content_type: str) -> str | None:
 def list_attachments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     query = db.query(Attachment).order_by(Attachment.created_at.desc())
     if not is_admin(current_user):
-        # Non-admin users can only see attachments they uploaded or can access through projects/chatters
+        # Non-admin users can see all attachments in projects/chatters they have access to
         accessible_project_ids = set()
         accessible_chatter_ids = set()
         
@@ -80,15 +80,20 @@ def list_attachments(db: Session = Depends(get_db), current_user: User = Depends
         ).all()
         accessible_chatter_ids = {c.id for c in user_chatters}
         
-        # Filter attachments by: uploaded by user OR in accessible projects/chatters
-        query = query.filter(
-            or_(
-                Attachment.uploaded_by_id == current_user.id,
-                Attachment.project_id.in_(accessible_project_ids) if accessible_project_ids else False,
-                Attachment.chatter_id.in_(accessible_chatter_ids) if accessible_chatter_ids else False,
-            ),
-            Attachment.is_deleted.is_(False)
-        )
+        # Build conditions for accessible attachments
+        conditions = []
+        if accessible_project_ids:
+            conditions.append(Attachment.project_id.in_(accessible_project_ids))
+        if accessible_chatter_ids:
+            conditions.append(Attachment.chatter_id.in_(accessible_chatter_ids))
+        
+        # Apply conditions - if user has no access to any projects/chatters, return empty
+        if conditions:
+            query = query.filter(or_(*conditions))
+        else:
+            query = query.filter(Attachment.id == -1)
+        
+        query = query.filter(Attachment.is_deleted.is_(False))
     return query.limit(300).all()
 
 
